@@ -122,19 +122,11 @@ public class PosService : IPosService
         if (string.IsNullOrWhiteSpace(model.FullName) || string.IsNullOrWhiteSpace(model.PhoneNumber))
             return Fail("الاسم ورقم الهاتف مطلوبان");
 
-        if (model.GovernorateId <= 0 || model.AreaId <= 0)
-            return Fail("يرجى اختيار المحافظة والمنطقة");
-
-        if (string.IsNullOrWhiteSpace(model.Neighborhood) || string.IsNullOrWhiteSpace(model.BuildingNumber))
-            return Fail("الحي ورقم المبنى مطلوبان");
-
         var lines = model.Lines?.Where(l => l.ProductId > 0 && l.Quantity > 0).ToList() ?? new();
         if (lines.Count == 0)
             return Fail("يجب إضافة منتج واحد على الأقل");
 
-        var area = await _context.Areas.AsNoTracking()
-            .FirstOrDefaultAsync(a => a.Id == model.AreaId, cancellationToken);
-        if (area == null) return Fail("المنطقة غير موجودة");
+        var (governorateId, areaId) = await ResolveLocationAsync(model.GovernorateId, model.AreaId, cancellationToken);
 
         if (model.AssignedDriverId.HasValue)
         {
@@ -189,10 +181,10 @@ public class PosService : IPosService
                 var address = new Address
                 {
                     CustomerId = customer.Id,
-                    GovernorateId = model.GovernorateId,
-                    AreaId = model.AreaId,
-                    Neighborhood = model.Neighborhood.Trim(),
-                    Building = model.BuildingNumber.Trim(),
+                    GovernorateId = governorateId,
+                    AreaId = areaId,
+                    Neighborhood = model.Neighborhood?.Trim() ?? string.Empty,
+                    Building = string.IsNullOrWhiteSpace(model.BuildingNumber) ? null : model.BuildingNumber.Trim(),
                     Street = model.Street?.Trim() ?? string.Empty,
                     DeliveryNotes = deliveryNotes,
                     IsDefault = false
@@ -286,6 +278,37 @@ public class PosService : IPosService
 
     private static PosSubmitResult Fail(string message) =>
         new() { Success = false, Message = message };
+
+    private async Task<(int GovernorateId, int AreaId)> ResolveLocationAsync(
+        int governorateId, int areaId, CancellationToken cancellationToken)
+    {
+        if (governorateId > 0 && areaId > 0)
+        {
+            var valid = await _context.Areas.AsNoTracking()
+                .AnyAsync(a => a.Id == areaId && a.GovernorateId == governorateId && a.IsActive, cancellationToken);
+            if (valid) return (governorateId, areaId);
+        }
+
+        var ammanArea = await (
+            from a in _context.Areas.AsNoTracking()
+            join g in _context.Governorates.AsNoTracking() on a.GovernorateId equals g.Id
+            where a.IsActive && g.NameAr == "عمان"
+            orderby a.Id
+            select new { a.GovernorateId, a.Id })
+            .FirstOrDefaultAsync(cancellationToken);
+
+        if (ammanArea != null)
+            return (ammanArea.GovernorateId, ammanArea.Id);
+
+        var fallback = await _context.Areas.AsNoTracking()
+            .Where(a => a.IsActive)
+            .OrderBy(a => a.GovernorateId).ThenBy(a => a.Id)
+            .Select(a => new { a.GovernorateId, a.Id })
+            .FirstOrDefaultAsync(cancellationToken)
+            ?? throw new InvalidOperationException("لا توجد مناطق توصيل في النظام");
+
+        return (fallback.GovernorateId, fallback.Id);
+    }
 
     private static string? Truncate(string? value, int max)
     {

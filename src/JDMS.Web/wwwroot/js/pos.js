@@ -182,14 +182,34 @@
         };
     }
 
-    function resetForm(keepProducts) {
+    function validateOrder() {
+        const name = $('#fullName').val().trim();
+        const phone = ($('#phoneNumber').val() || '').replace(/\D/g, '');
+        if (!name) {
+            showAlert('اسم العميل مطلوب', false);
+            $('#fullName').focus();
+            return false;
+        }
+        if (phone.length < 7) {
+            showAlert('رقم الهاتف مطلوب (7 أرقام على الأقل)', false);
+            $('#phoneNumber').focus();
+            return false;
+        }
+        if (cart.length === 0) {
+            showAlert('أضف منتجاً واحداً على الأقل', false);
+            $('#productSearch').focus();
+            return false;
+        }
+        return true;
+    }
+
+    function resetForm() {
         hideAlert();
         lastOrderId = null;
-        if (!keepProducts) {
-            cart = [];
-            renderCart();
-        }
+        cart = [];
+        renderCart();
         $('#existingCustomerId, #fullName, #phoneNumber, #secondaryPhone, #neighborhood, #buildingNumber, #street, #deliveryNotes, #orderNotes, #amountReceived').val('');
+        $('#productSearch').val('');
         $('#deliveryFee, #discount').val('0');
         $('#changeDue').val('0.00');
         $('#governorateId').val('');
@@ -217,12 +237,10 @@
         window.open(url, '_blank');
     }
 
-    function submit(createInvoice, thenNew) {
+    function submit(createInvoice) {
         hideAlert();
-        if (cart.length === 0) {
-            showAlert('أضف منتجاً واحداً على الأقل', false);
-            return;
-        }
+        if (!validateOrder()) return;
+
         const payload = collectPayload(createInvoice);
         $.ajax({
             url: cfg.submitUrl,
@@ -231,16 +249,13 @@
             data: JSON.stringify(payload),
             success: function (res) {
                 if (res.success) {
-                    lastOrderId = res.orderId;
                     showAlert(res.message + ' — ' + res.orderNumber, true);
                     refreshStats();
                     if (createInvoice && res.orderId) {
                         openPrint(res.orderId, false);
                     }
-                    if (thenNew) {
-                        resetForm(false);
-                        $.getJSON(cfg.searchUrl, { q: '' }, renderProductGrid);
-                    }
+                    resetForm();
+                    $.getJSON(cfg.searchUrl, { q: '' }, renderProductGrid);
                 } else {
                     showAlert(res.message || 'فشل الحفظ', false);
                 }
@@ -325,11 +340,11 @@
 
     $('#deliveryFee, #discount, #amountReceived').on('input', recalc);
 
-    $('#btnSave').on('click', () => submit(false, false));
-    $('#btnSavePrint').on('click', () => submit(true, false));
-    $('#btnSaveNew').on('click', () => submit(false, true));
+    $('#btnSave').on('click', () => submit(false));
+    $('#btnSavePrint').on('click', () => submit(true));
+    $('#btnSaveNew').on('click', () => submit(false));
     $('#btnCancel').on('click', () => {
-        if (confirm('إلغاء الطلب الحالي؟')) resetForm(false);
+        if (confirm('إلغاء الطلب الحالي؟')) resetForm();
     });
 
     $('#btnPrintA4').on('click', function () {

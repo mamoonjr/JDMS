@@ -11,8 +11,8 @@ public class PosSubmitModel
     public string? SecondaryPhone { get; set; }
     public int GovernorateId { get; set; }
     public int AreaId { get; set; }
-    public string Neighborhood { get; set; } = string.Empty;
-    public string BuildingNumber { get; set; } = string.Empty;
+    public string? Neighborhood { get; set; }
+    public string? BuildingNumber { get; set; }
     public string? Street { get; set; }
     public string? DeliveryNotes { get; set; }
     public decimal DeliveryFee { get; set; }

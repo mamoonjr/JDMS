@@ -31,19 +31,20 @@
                 <div class="pos-panel-body">
                     <input type="hidden" id="existingCustomerId" value="" />
                     <div class="mb-2">
-                        <label class="form-label small">رقم الجوال</label>
+                        <label class="form-label small">رقم الجوال <span class="text-danger">*</span></label>
                         <input type="tel" class="form-control form-control-sm" id="phoneNumber" autocomplete="off" placeholder="07xxxxxxxx" />
                         <div id="customerLookupHint" class="form-text small text-success d-none">تم العثور على عميل</div>
                     </div>
                     <div class="mb-2">
-                        <label class="form-label small">اسم العميل</label>
-                        <input type="text" class="form-control form-control-sm" id="fullName" required />
+                        <label class="form-label small">اسم العميل <span class="text-danger">*</span></label>
+                        <input type="text" class="form-control form-control-sm" id="fullName" />
                     </div>
                     <div class="mb-2">
-                        <label class="form-label small">جوال ثانوي</label>
+                        <label class="form-label small">جوال ثانوي <span class="text-muted">(اختياري)</span></label>
                         <input type="tel" class="form-control form-control-sm" id="secondaryPhone" />
                     </div>
                     <hr class="my-2" />
+                    <small class="text-muted d-block mb-2">العنوان والتوصيل (اختياري)</small>
                     <div class="row g-2">
                         <div class="col-6">
                             <label class="form-label small">المحافظة</label>
@@ -100,7 +101,7 @@
         <div class="col-xl-5 col-lg-5">
             <div class="pos-panel pos-panel-products h-100">
                 <div class="pos-panel-header d-flex gap-2 align-items-center">
-                    <span>المنتجات</span>
+                    <span>المنتجات <span class="text-danger">*</span></span>
                     <input type="search" class="form-control form-control-sm flex-grow-1" id="productSearch"
                            placeholder="بحث: اسم / باركود / SKU" autocomplete="off" />
                 </div>
