@@ -6,6 +6,16 @@ using Microsoft.AspNetCore.Mvc.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
+// Render وغيره: الاستماع على المنفذ الذي يحدده المنصة (PORT)
+var renderPort = Environment.GetEnvironmentVariable("PORT");
+if (!string.IsNullOrWhiteSpace(renderPort))
+    builder.WebHost.UseUrls($"http://+:{renderPort.Trim()}");
+
+builder.Configuration.AddJsonFile(
+    $"appsettings.{builder.Environment.EnvironmentName}.local.json",
+    optional: true,
+    reloadOnChange: true);
+
 builder.Services.AddInfrastructure(builder.Configuration);
 builder.Services.AddAuthentication();
 builder.Services.AddControllersWithViews(options =>

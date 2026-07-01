@@ -15,8 +15,11 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection")
+        var connectionString = configuration.GetConnectionString("DefaultConnection")?.Trim()
             ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
+
+        if (string.IsNullOrWhiteSpace(connectionString))
+            throw new InvalidOperationException("Connection string 'DefaultConnection' is empty.");
 
         var serverVersion = new MySqlServerVersion(new Version(8, 0, 36));
 

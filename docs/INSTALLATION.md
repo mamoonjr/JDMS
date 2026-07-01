@@ -45,6 +45,41 @@ FLUSH PRIVILEGES;
 | User | `root` أو `jdms_user` |
 | Password | كلمة مرور MySQL لديك |
 
+## 2ب. الاتصال بـ Aiven.io (MySQL سحابي)
+
+1. من لوحة Aiven → خدمة MySQL → **Connection information** انسخ القيم التالية.
+2. انسخ الملف النموذجي وعدّله (لا يُرفع على Git):
+
+```powershell
+copy src\JDMS.Web\appsettings.Development.local.json.example src\JDMS.Web\appsettings.Development.local.json
+```
+
+3. استبدل القيم في `appsettings.Development.local.json` **بدون مسافات** في البداية أو النهاية:
+
+| من Aiven | ضعه في Connection String |
+|----------|---------------------------|
+| Host | `Server=` |
+| Port | `Port=` (غالباً ليس 3306) |
+| Database name | `Database=` (مثلاً `defaultdb`) |
+| User | `User=` (غالباً `avnadmin`) |
+| Password | `Password=` |
+
+**مثال بعد الاستبدال:**
+
+```json
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=mysql-abc123.a.aivencloud.com;Port=12345;Database=defaultdb;User=avnadmin;Password=YourRealPassword;SslMode=Required;"
+  }
+}
+```
+
+4. (اختياري) إذا طلب SSL شهادة CA، حمّل `ca.pem` من Aiven وأضف:
+   `SslCa=C:\\path\\to\\ca.pem;`
+
+5. للنشر على السيرفر استخدم متغير البيئة (بدون مسافات):
+   `ConnectionStrings__DefaultConnection`
+
 ## 3. تطبيق مخطط قاعدة البيانات
 
 **الطريقة أ — تلقائياً عند تشغيل التطبيق (موصى بها):**

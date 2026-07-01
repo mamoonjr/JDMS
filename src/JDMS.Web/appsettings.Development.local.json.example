@@ -1,0 +1,5 @@
+{
+  "ConnectionStrings": {
+    "DefaultConnection": "Server=HOST.a.aivencloud.com;Port=PORT;Database=defaultdb;User=avnadmin;Password=PASSWORD;SslMode=Required;"
+  }
+}
