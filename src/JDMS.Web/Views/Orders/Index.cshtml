@@ -87,12 +87,6 @@
                 </tr>
             </thead>
             <tbody>
-                @if (!Model.Any())
-                {
-                    <tr>
-                        <td colspan="9" class="text-center text-muted py-4">لا توجد طلبات مطابقة للبحث</td>
-                    </tr>
-                }
                 @foreach (var o in Model)
                 {
                     <tr>

@@ -94,10 +94,6 @@
         </tr>
     </thead>
     <tbody>
-        @if (!Model.Expenses.Any())
-        {
-            <tr><td colspan="6" class="text-center text-muted">لا توجد مصاريف في الفترة المحددة</td></tr>
-        }
         @foreach (var e in Model.Expenses)
         {
             <tr>

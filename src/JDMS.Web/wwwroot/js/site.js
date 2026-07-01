@@ -2,7 +2,8 @@
     if ($.fn.DataTable && $('.jdms-table').length) {
         $('.jdms-table').DataTable({
             language: {
-                url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/ar.json'
+                url: 'https://cdn.datatables.net/plug-ins/1.13.8/i18n/ar.json',
+                emptyTable: 'لا توجد بيانات للعرض'
             },
             pageLength: 25,
             order: []
