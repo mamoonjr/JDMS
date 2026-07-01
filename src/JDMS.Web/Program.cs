@@ -7,15 +7,15 @@ using Microsoft.AspNetCore.Mvc.Authorization;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Render وغيره: الاستماع على المنفذ الذي يحدده المنصة (PORT)
-var renderPort = Environment.GetEnvironmentVariable("PORT");
-var isRender = !string.IsNullOrWhiteSpace(renderPort);
-if (isRender)
-    builder.WebHost.UseUrls($"http://+:{renderPort.Trim()}");
+// Render / Docker: bind to platform PORT (default 8080 locally)
+var port = Environment.GetEnvironmentVariable("PORT") ?? "8080";
+var isCloudHost = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("PORT"));
+builder.WebHost.UseUrls($"http://0.0.0.0:{port.Trim()}");
+Console.WriteLine($"[JDMS] Listening on http://0.0.0.0:{port.Trim()} (cloud={isCloudHost})");
 
 builder.Services.Configure<ForwardedHeadersOptions>(options =>
 {
-    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto;
+    options.ForwardedHeaders = ForwardedHeaders.XForwardedFor | ForwardedHeaders.XForwardedProto | ForwardedHeaders.XForwardedHost;
     options.KnownNetworks.Clear();
     options.KnownProxies.Clear();
 });
@@ -55,6 +55,8 @@ builder.Services.ConfigureApplicationCookie(options =>
     options.AccessDeniedPath = "/Account/AccessDenied";
     options.ExpireTimeSpan = TimeSpan.FromHours(8);
     options.SlidingExpiration = true;
+    options.Cookie.SecurePolicy = CookieSecurePolicy.SameAsRequest;
+    options.Cookie.SameSite = SameSiteMode.Lax;
 });
 
 var app = builder.Build();
@@ -67,18 +69,17 @@ using (var scope = app.Services.CreateScope())
     await DbInitializer.InitializeAsync(scope.ServiceProvider);
 }
 
-if (!app.Environment.IsDevelopment())
-{
-    app.UseExceptionHandler("/Home/Error");
-    if (!isRender)
-        app.UseHsts();
-}
-
+// Forwarded headers must run before other middleware (Render HTTPS termination)
 app.UseForwardedHeaders();
 
-// Render يُنهي HTTPS أمام التطبيق — إعادة التوجيه لـ HTTPS تسبب أخطاء (400/حلقة)
-if (!isRender)
+if (!app.Environment.IsDevelopment())
+    app.UseExceptionHandler("/Home/Error");
+
+if (app.Environment.IsDevelopment())
+{
+    app.UseHsts();
     app.UseHttpsRedirection();
+}
 
 app.UseStaticFiles();
 app.UseRouting();
