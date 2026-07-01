@@ -203,9 +203,20 @@
         return true;
     }
 
-    function resetForm() {
+    function hideSuccessBanner() {
+        $('#posSuccessBanner').addClass('d-none');
+    }
+
+    function showSuccessBanner(orderNumber) {
+        const text = orderNumber
+            ? `تم حفظ الطلب بنجاح — ${orderNumber}`
+            : 'تم حفظ الطلب بنجاح';
+        $('#posSuccessText').text(text);
+        $('#posSuccessBanner').removeClass('d-none');
         hideAlert();
-        lastOrderId = null;
+    }
+
+    function clearFormData() {
         cart = [];
         renderCart();
         $('#existingCustomerId, #fullName, #phoneNumber, #secondaryPhone, #neighborhood, #buildingNumber, #street, #deliveryNotes, #orderNotes, #amountReceived').val('');
@@ -218,6 +229,14 @@
         $('#paymentMethod').val('0');
         $('#orderStatus').val('0');
         $('#customerLookupHint').addClass('d-none');
+    }
+
+    function startNewOrder() {
+        hideAlert();
+        hideSuccessBanner();
+        lastOrderId = null;
+        clearFormData();
+        $.getJSON(cfg.searchUrl, { q: '' }, renderProductGrid);
         $('#phoneNumber').focus();
     }
 
@@ -249,14 +268,18 @@
             data: JSON.stringify(payload),
             success: function (res) {
                 if (res.success) {
-                    showAlert(res.message + ' — ' + res.orderNumber, true);
+                    lastOrderId = res.orderId;
+                    showSuccessBanner(res.orderNumber);
+                    showAlert('تم حفظ الطلب بنجاح', true);
+                    clearFormData();
                     refreshStats();
                     if (createInvoice && res.orderId) {
                         openPrint(res.orderId, false);
                     }
-                    resetForm();
                     $.getJSON(cfg.searchUrl, { q: '' }, renderProductGrid);
+                    $('#phoneNumber').focus();
                 } else {
+                    hideSuccessBanner();
                     showAlert(res.message || 'فشل الحفظ', false);
                 }
             },
@@ -342,9 +365,9 @@
 
     $('#btnSave').on('click', () => submit(false));
     $('#btnSavePrint').on('click', () => submit(true));
-    $('#btnSaveNew').on('click', () => submit(false));
+    $('#btnNewOrder, #btnNewOrderAction').on('click', () => startNewOrder());
     $('#btnCancel').on('click', () => {
-        if (confirm('إلغاء الطلب الحالي؟')) resetForm();
+        if (confirm('إلغاء الطلب الحالي؟')) startNewOrder();
     });
 
     $('#btnPrintA4').on('click', function () {
@@ -360,7 +383,7 @@
         if ($(e.target).is('textarea')) return;
         if (e.key === 'F2') { e.preventDefault(); $('#btnSave').click(); }
         if (e.key === 'F3') { e.preventDefault(); $('#btnSavePrint').click(); }
-        if (e.key === 'F4') { e.preventDefault(); $('#btnSaveNew').click(); }
+        if (e.key === 'F4') { e.preventDefault(); startNewOrder(); }
         if (e.key === 'Escape') { e.preventDefault(); $('#btnCancel').click(); }
     });
 

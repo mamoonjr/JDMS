@@ -13,13 +13,23 @@
     <div class="pos-toolbar d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
         <div>
             <h5 class="mb-0 fw-bold">نقطة البيع — JDMS</h5>
-            <small class="text-muted">F2 حفظ · F3 طباعة · F4 طلب جديد · ESC إلغاء</small>
+            <small class="text-muted">F2 حفظ · F3 حفظ وطباعة · F4 طلب جديد · ESC إلغاء</small>
         </div>
         <div class="pos-stats d-flex flex-wrap gap-2">
             <span class="pos-stat-badge">طلبات اليوم: <strong id="statOrders">@stats.OrdersToday</strong></span>
             <span class="pos-stat-badge">إيراد اليوم: <strong id="statRevenue">@stats.RevenueToday.ToString("N2")</strong> د.أ</span>
             <span class="pos-stat-badge">قيد التوصيل: <strong id="statPending">@stats.PendingDeliveries</strong></span>
             <span class="pos-stat-badge">سائقون نشطون: <strong id="statDrivers">@stats.ActiveDrivers</strong></span>
+        </div>
+    </div>
+
+    <div id="posSuccessBanner" class="alert alert-success pos-success-banner mb-2 d-none" role="alert">
+        <div class="d-flex flex-wrap align-items-center justify-content-between gap-2">
+            <div class="d-flex align-items-center gap-2">
+                <span class="pos-success-icon" aria-hidden="true">✓</span>
+                <strong id="posSuccessText">تم حفظ الطلب بنجاح</strong>
+            </div>
+            <button type="button" class="btn btn-sm btn-light fw-bold" id="btnNewOrder">+ إدخال طلب جديد</button>
         </div>
     </div>
 
@@ -198,12 +208,12 @@
                     <div class="d-grid gap-2 pos-actions">
                         <button type="button" class="btn btn-primary" id="btnSave" title="F2">حفظ الطلب (F2)</button>
                         <button type="button" class="btn btn-success" id="btnSavePrint" title="F3">حفظ وطباعة (F3)</button>
+                        <button type="button" class="btn btn-outline-primary fw-semibold" id="btnNewOrderAction" title="F4">+ إدخال طلب جديد (F4)</button>
                         <div class="btn-group">
-                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnPrintA4">A4</button>
-                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnPrintThermal">حراري</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnPrintA4">طباعة A4</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnPrintThermal">طباعة حراري</button>
                         </div>
-                        <button type="button" class="btn btn-outline-primary" id="btnSaveNew" title="F4">حفظ وطلب جديد (F4)</button>
-                        <button type="button" class="btn btn-outline-danger" id="btnCancel" title="ESC">إلغاء (ESC)</button>
+                        <button type="button" class="btn btn-outline-danger" id="btnCancel" title="ESC">إلغاء الطلب (ESC)</button>
                     </div>
                     <div id="posAlert" class="alert alert-sm mt-2 d-none py-2 small" role="alert"></div>
                 </div>

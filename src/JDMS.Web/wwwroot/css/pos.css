@@ -150,6 +150,33 @@
     font-size: 0.85rem;
 }
 
+.pos-success-banner {
+    border: 1px solid #198754;
+    box-shadow: 0 2px 8px rgba(25, 135, 84, 0.15);
+    animation: posSuccessIn 0.35s ease-out;
+}
+
+.pos-success-icon {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.75rem;
+    height: 1.75rem;
+    border-radius: 50%;
+    background: #fff;
+    color: #198754;
+    font-weight: 700;
+}
+
+@keyframes posSuccessIn {
+    from { opacity: 0; transform: translateY(-6px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+#posAlert.alert-success {
+    font-weight: 600;
+}
+
 @media (max-width: 991.98px) {
     .pos-panel-products .pos-panel-body {
         max-height: 320px;
