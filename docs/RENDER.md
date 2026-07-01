@@ -66,7 +66,7 @@ Server=mysql-xxxxx.a.aivencloud.com;Port=12345;Database=defaultdb;User=avnadmin;
 
 | الحقل | القيمة |
 |--------|--------|
-| **Health Check Path** | `/Account/Login` |
+| **Health Check Path** | `/health` |
 
 ### 5. Create Web Service
 
@@ -105,7 +105,7 @@ Server=mysql-xxxxx.a.aivencloud.com;Port=12345;Database=defaultdb;User=avnadmin;
 | `database ''` / Database فارغ | تأكد من `Database=defaultdb` في السلسلة — لا تنسخ من Aiven بدون اسم القاعدة |
 | Transient failure / EnableRetryOnFailure | أصلح السلسلة أولاً؛ التطبيق يعيد المحاولة تلقائياً الآن |
 | لصق رابط `mysql://` من Aiven | مدعوم تلقائياً، أو استخدم صيغة `Server=...;Database=...` |
-| صفحة بيضاء / 502 | تأكد أن التطبيق يستمع على `PORT` (مدعوم في `Program.cs`) |
+| صفحة بيضاء / 502 / HTTP 400 | تأكد من `MYSQL_*`؛ جرّب `/health`؛ عطّل Health Check المؤقت أو اجعله `/health` |
 
 ---
 

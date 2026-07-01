@@ -15,6 +15,10 @@ public static class MySqlConnectionHelper
         if (fromParts != null)
             return Prepare(fromParts, sslCa);
 
+        var fromNested = TryBuildFromNestedConnectionString(configuration);
+        if (fromNested != null)
+            return Prepare(fromNested, sslCa);
+
         var fromConfig = configuration.GetConnectionString("DefaultConnection");
         if (!string.IsNullOrWhiteSpace(fromConfig))
             return Prepare(fromConfig, sslCa);
@@ -84,6 +88,32 @@ public static class MySqlConnectionHelper
     {
         var b = new MySqlConnectionStringBuilder(connectionString);
         return $"Server={b.Server};Port={b.Port};Database={b.Database};User={b.UserID};SslMode={b.SslMode}";
+    }
+
+    private static string? TryBuildFromNestedConnectionString(IConfiguration configuration)
+    {
+        var section = configuration.GetSection("ConnectionStrings:DefaultConnection");
+        if (!section.Exists())
+            return null;
+
+        var server = section["Server"] ?? section["Host"];
+        if (string.IsNullOrWhiteSpace(server))
+            return null;
+
+        var builder = new MySqlConnectionStringBuilder
+        {
+            Server = server.Trim(),
+            Port = uint.TryParse(section["Port"], out var p) ? p : 3306,
+            Database = FirstNonEmpty(section["Database"], section["Db"]) ?? AivenDefaultDatabase,
+            UserID = FirstNonEmpty(section["User"], section["UserID"], section["Uid"]) ?? "avnadmin",
+            Password = section["Password"] ?? section["Pwd"] ?? "",
+            SslMode = MySqlSslMode.Required
+        };
+
+        if (string.IsNullOrWhiteSpace(builder.Password))
+            throw new InvalidOperationException("ConnectionStrings:DefaultConnection:Password is required.");
+
+        return builder.ConnectionString;
     }
 
     private static string? TryBuildFromEnvironmentVariables(IConfiguration configuration)

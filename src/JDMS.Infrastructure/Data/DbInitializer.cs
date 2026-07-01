@@ -7,6 +7,8 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using MySqlConnector;
+using System.Data;
 
 namespace JDMS.Infrastructure.Data;
 
@@ -26,7 +28,7 @@ public static class DbInitializer
         var csPreview = MySqlConnectionHelper.DescribeSafe(MySqlConnectionHelper.Resolve(config));
         logger.LogInformation("Connecting to MySQL: {Connection}", csPreview);
 
-        await MigrateWithRetryAsync(context, logger);
+        await MigrateWithRetryAsync(context, logger, config);
 
         foreach (var role in Roles.All)
         {
@@ -280,8 +282,14 @@ public static class DbInitializer
         return true;
     }
 
-    private static async Task MigrateWithRetryAsync(ApplicationDbContext context, ILogger logger)
+    private static async Task MigrateWithRetryAsync(ApplicationDbContext context, ILogger logger, IConfiguration configuration)
     {
+        if (string.Equals(configuration["JDMS_DB_RESET"], "true", StringComparison.OrdinalIgnoreCase))
+        {
+            logger.LogWarning("JDMS_DB_RESET=true — clearing all tables before migration.");
+            await DropAllTablesAsync(context, logger);
+        }
+
         const int maxAttempts = 6;
         for (var attempt = 1; attempt <= maxAttempts; attempt++)
         {
@@ -289,6 +297,20 @@ public static class DbInitializer
             {
                 await context.Database.MigrateAsync();
                 return;
+            }
+            catch (Exception ex) when (TryGetMySqlException(ex, out var mysqlEx) && IsAlreadyExistsError(mysqlEx))
+            {
+                var applied = await context.Database.GetAppliedMigrationsAsync();
+                if (!applied.Any())
+                {
+                    logger.LogWarning(mysqlEx,
+                        "Database has tables but no migration history (failed prior deploy). Clearing and retrying.");
+                    await DropAllTablesAsync(context, logger);
+                    await context.Database.MigrateAsync();
+                    return;
+                }
+
+                throw;
             }
             catch (Exception ex) when (attempt < maxAttempts && IsTransient(ex))
             {
@@ -300,6 +322,53 @@ public static class DbInitializer
             }
         }
     }
+
+    private static async Task DropAllTablesAsync(ApplicationDbContext context, ILogger logger)
+    {
+        var connection = context.Database.GetDbConnection();
+        if (connection.State != ConnectionState.Open)
+            await connection.OpenAsync();
+
+        var tables = new List<string>();
+        await using (var cmd = connection.CreateCommand())
+        {
+            cmd.CommandText =
+                "SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA = DATABASE() AND TABLE_TYPE = 'BASE TABLE'";
+            await using var reader = await cmd.ExecuteReaderAsync();
+            while (await reader.ReadAsync())
+                tables.Add(reader.GetString(0));
+        }
+
+        if (tables.Count == 0)
+            return;
+
+        await context.Database.ExecuteSqlRawAsync("SET FOREIGN_KEY_CHECKS = 0;");
+        foreach (var table in tables)
+        {
+            logger.LogWarning("Dropping table {Table}", table);
+            await context.Database.ExecuteSqlRawAsync($"DROP TABLE IF EXISTS `{table}`");
+        }
+
+        await context.Database.ExecuteSqlRawAsync("SET FOREIGN_KEY_CHECKS = 1;");
+    }
+
+    private static bool TryGetMySqlException(Exception ex, out MySqlException mysqlEx)
+    {
+        for (var current = ex; current != null; current = current.InnerException)
+        {
+            if (current is MySqlException found)
+            {
+                mysqlEx = found;
+                return true;
+            }
+        }
+
+        mysqlEx = null!;
+        return false;
+    }
+
+    private static bool IsAlreadyExistsError(MySqlException ex) =>
+        ex.Message.Contains("already exists", StringComparison.OrdinalIgnoreCase);
 
     private static bool IsTransient(Exception ex)
     {
