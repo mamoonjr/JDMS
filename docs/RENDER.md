@@ -38,16 +38,29 @@
 | Key | Value | ملاحظة |
 |-----|--------|--------|
 | `ASPNETCORE_ENVIRONMENT` | `Production` | إلزامي |
-| `ConnectionStrings__DefaultConnection` | انظر الأسفل | **بدون مسافات** في البداية/النهاية |
+| **طريقة 1 (موصى بها)** | متغيرات منفصلة أدناه | تتجنب مشاكل كلمة المرور |
+| **طريقة 2** | `ConnectionStrings__DefaultConnection` | سلسلة واحدة — انظر الأسفل |
 | `PORT` | يضبطه Render تلقائياً | لا تغيّره عادة |
 
-**مثال قيمة `ConnectionStrings__DefaultConnection` من Aiven:**
+### الطريقة 1 — متغيرات منفصلة (الأفضل على Render)
+
+| Key | مثال من Aiven |
+|-----|----------------|
+| `MYSQL_HOST` | `mysql-xxxxx.a.aivencloud.com` |
+| `MYSQL_PORT` | `12345` |
+| `MYSQL_DATABASE` | `defaultdb` |
+| `MYSQL_USER` | `avnadmin` |
+| `MYSQL_PASSWORD` | كلمة المرور من Aiven |
+
+### الطريقة 2 — سلسلة اتصال واحدة
+
+**مهم:** يجب أن تحتوي على `Database=defaultdb` — بدونها يظهر الخطأ `database ''`.
 
 ```
-Server=mysql-xxxxx.a.aivencloud.com;Port=12345;Database=defaultdb;User=avnadmin;Password=كلمة_المرور_الحقيقية;SslMode=Required;
+Server=mysql-xxxxx.a.aivencloud.com;Port=12345;Database=defaultdb;User=avnadmin;Password=كلمة_المرور;SslMode=Required;
 ```
 
-استبدل كل جزء بالقيم من Aiven → **Connection information**.
+انسخ القيم من Aiven → **Connection information** (Host, Port, Database name, User, Password).
 
 ### 4. Health Check (اختياري موصى به)
 
@@ -89,7 +102,9 @@ Server=mysql-xxxxx.a.aivencloud.com;Port=12345;Database=defaultdb;User=avnadmin;
 | Build failed | راجع **Logs** في Render؛ تأكد من وجود `Dockerfile` في الجذر |
 | Access denied (MySQL) | تحقق من User/Password في متغير البيئة |
 | Can't connect to server | فعّل `0.0.0.0/0` في Aiven أو أضف IP Render |
-| SSL error | أضف `SslMode=Required;` في Connection String |
+| `database ''` / Database فارغ | تأكد من `Database=defaultdb` في السلسلة — لا تنسخ من Aiven بدون اسم القاعدة |
+| Transient failure / EnableRetryOnFailure | أصلح السلسلة أولاً؛ التطبيق يعيد المحاولة تلقائياً الآن |
+| لصق رابط `mysql://` من Aiven | مدعوم تلقائياً، أو استخدم صيغة `Server=...;Database=...` |
 | صفحة بيضاء / 502 | تأكد أن التطبيق يستمع على `PORT` (مدعوم في `Program.cs`) |
 
 ---

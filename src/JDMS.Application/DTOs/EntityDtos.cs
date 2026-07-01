@@ -1,4 +1,5 @@
 using System.ComponentModel.DataAnnotations;
+using JDMS.Application.Constants;
 
 namespace JDMS.Application.DTOs;
 
@@ -229,14 +230,76 @@ public class UserViewModel
     public string Email { get; set; } = string.Empty;
     public string FullName { get; set; } = string.Empty;
     public string Role { get; set; } = string.Empty;
+    public string RoleDisplayAr { get; set; } = string.Empty;
     public bool IsActive { get; set; }
 }
 
 public class UserCreateViewModel
 {
+    [Required(ErrorMessage = "اسم الدخول مطلوب")]
+    [MaxLength(50)]
+    [Display(Name = "اسم الدخول")]
     public string UserName { get; set; } = string.Empty;
-    public string Email { get; set; } = string.Empty;
+
+    [EmailAddress(ErrorMessage = "البريد غير صالح")]
+    [Display(Name = "البريد الإلكتروني")]
+    public string? Email { get; set; }
+
+    [Required(ErrorMessage = "الاسم الكامل مطلوب")]
+    [MaxLength(200)]
+    [Display(Name = "الاسم الكامل")]
     public string FullName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "كلمة المرور مطلوبة")]
+    [MinLength(6, ErrorMessage = "كلمة المرور 6 أحرف على الأقل")]
+    [DataType(DataType.Password)]
+    [Display(Name = "كلمة المرور")]
     public string Password { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "تأكيد كلمة المرور مطلوب")]
+    [Compare(nameof(Password), ErrorMessage = "كلمة المرور غير متطابقة")]
+    [DataType(DataType.Password)]
+    [Display(Name = "تأكيد كلمة المرور")]
+    public string ConfirmPassword { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "يجب اختيار صلاحية المستخدم")]
+    [Display(Name = "الصلاحية / الدور")]
+    public string Role { get; set; } = Roles.Employee;
+}
+
+public class UserEditViewModel
+{
+    public string Id { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "اسم الدخول مطلوب")]
+    [MaxLength(50)]
+    [Display(Name = "اسم الدخول")]
+    public string UserName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "البريد الإلكتروني مطلوب")]
+    [EmailAddress(ErrorMessage = "البريد غير صالح")]
+    [Display(Name = "البريد الإلكتروني")]
+    public string Email { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "الاسم الكامل مطلوب")]
+    [MaxLength(200)]
+    [Display(Name = "الاسم الكامل")]
+    public string FullName { get; set; } = string.Empty;
+
+    [Required(ErrorMessage = "يجب اختيار صلاحية المستخدم")]
+    [Display(Name = "الصلاحية / الدور")]
     public string Role { get; set; } = string.Empty;
+
+    [Display(Name = "نشط")]
+    public bool IsActive { get; set; } = true;
+
+    [MinLength(6, ErrorMessage = "كلمة المرور 6 أحرف على الأقل")]
+    [DataType(DataType.Password)]
+    [Display(Name = "كلمة مرور جديدة")]
+    public string? NewPassword { get; set; }
+
+    [Compare(nameof(NewPassword), ErrorMessage = "كلمة المرور غير متطابقة")]
+    [DataType(DataType.Password)]
+    [Display(Name = "تأكيد كلمة المرور الجديدة")]
+    public string? ConfirmNewPassword { get; set; }
 }

@@ -4,6 +4,7 @@ using JDMS.Infrastructure.Services;
 using JDMS.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 
@@ -21,7 +22,11 @@ public static class DbInitializer
         var hostEnv = scope.ServiceProvider.GetRequiredService<Microsoft.Extensions.Hosting.IHostEnvironment>();
         var isDevelopment = hostEnv.EnvironmentName == Microsoft.Extensions.Hosting.Environments.Development;
 
-        await context.Database.MigrateAsync();
+        var config = scope.ServiceProvider.GetRequiredService<IConfiguration>();
+        var csPreview = MySqlConnectionHelper.DescribeSafe(MySqlConnectionHelper.Resolve(config));
+        logger.LogInformation("Connecting to MySQL: {Connection}", csPreview);
+
+        await MigrateWithRetryAsync(context, logger);
 
         foreach (var role in Roles.All)
         {
@@ -273,5 +278,38 @@ public static class DbInitializer
         context.Areas.Remove(obsolete);
         await context.SaveChangesAsync();
         return true;
+    }
+
+    private static async Task MigrateWithRetryAsync(ApplicationDbContext context, ILogger logger)
+    {
+        const int maxAttempts = 6;
+        for (var attempt = 1; attempt <= maxAttempts; attempt++)
+        {
+            try
+            {
+                await context.Database.MigrateAsync();
+                return;
+            }
+            catch (Exception ex) when (attempt < maxAttempts && IsTransient(ex))
+            {
+                var delay = TimeSpan.FromSeconds(5 * attempt);
+                logger.LogWarning(ex,
+                    "Database migration attempt {Attempt}/{Max} failed (transient). Retrying in {Delay}s...",
+                    attempt, maxAttempts, delay.TotalSeconds);
+                await Task.Delay(delay);
+            }
+        }
+    }
+
+    private static bool IsTransient(Exception ex)
+    {
+        for (var current = ex; current != null; current = current.InnerException)
+        {
+            if (current is TimeoutException or IOException)
+                return true;
+            if (current.Message.Contains("transient", StringComparison.OrdinalIgnoreCase))
+                return true;
+        }
+        return false;
     }
 }

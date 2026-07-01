@@ -1,6 +1,62 @@
 @model IEnumerable<UserViewModel>
-@{ ViewData["Title"] = "المستخدمين"; }
-<a asp-action="Create" class="btn btn-primary mb-3">مستخدم جديد</a>
-<table class="table jdms-table"><thead><tr><th>المستخدم</th><th>البريد</th><th>الاسم</th><th>الدور</th><th>نشط</th><th></th></tr></thead>
-<tbody>@foreach(var u in Model){<tr><td>@u.UserName</td><td>@u.Email</td><td>@u.FullName</td><td>@u.Role</td><td>@(u.IsActive?"نعم":"لا")</td>
-<td><form asp-action="ToggleActive" method="post">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@u.Id"/><button class="btn btn-sm btn-warning">تبديل الحالة</button></form></td></tr>}</tbody></table>
+@{
+    ViewData["Title"] = "المستخدمين والصلاحيات";
+}
+@if (TempData["Success"] != null)
+{
+    <div class="alert alert-success alert-dismissible fade show">@TempData["Success"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger alert-dismissible fade show">@TempData["Error"]<button type="button" class="btn-close" data-bs-dismiss="alert"></button></div>
+}
+
+<div class="d-flex justify-content-between align-items-center mb-3">
+    <div>
+        <h5 class="mb-0">إدارة المستخدمين</h5>
+        <small class="text-muted">اسم الدخول، كلمة المرور، والصلاحيات</small>
+    </div>
+    <a asp-action="Create" class="btn btn-primary">+ مستخدم جديد</a>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-2 small">
+        <strong>الصلاحيات:</strong>
+        <span class="badge bg-danger ms-1">مدير النظام</span> كامل الصلاحيات
+        <span class="badge bg-warning text-dark ms-2">مدير</span> تقارير + إدارة
+        <span class="badge bg-secondary ms-2">موظف</span> عمليات يومية
+    </div>
+</div>
+
+<table class="table table-striped jdms-table">
+    <thead>
+        <tr>
+            <th>اسم الدخول</th>
+            <th>الاسم الكامل</th>
+            <th>البريد</th>
+            <th>الصلاحية</th>
+            <th>نشط</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var u in Model)
+        {
+            <tr>
+                <td><strong>@u.UserName</strong></td>
+                <td>@u.FullName</td>
+                <td>@u.Email</td>
+                <td><span class="badge @(u.Role == Roles.Administrator ? "bg-danger" : u.Role == Roles.Manager ? "bg-warning text-dark" : "bg-secondary")">@u.RoleDisplayAr</span></td>
+                <td>@(u.IsActive ? "نعم" : "لا")</td>
+                <td class="text-nowrap">
+                    <a asp-action="Edit" asp-route-id="@u.Id" class="btn btn-sm btn-warning">تعديل / كلمة المرور</a>
+                    <form asp-action="ToggleActive" method="post" class="d-inline">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="id" value="@u.Id" />
+                        <button type="submit" class="btn btn-sm btn-outline-secondary">@(u.IsActive ? "تعطيل" : "تفعيل")</button>
+                    </form>
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

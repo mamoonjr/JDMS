@@ -15,17 +15,19 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration configuration)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection")?.Trim()
-            ?? throw new InvalidOperationException("Connection string 'DefaultConnection' is not configured.");
-
-        if (string.IsNullOrWhiteSpace(connectionString))
-            throw new InvalidOperationException("Connection string 'DefaultConnection' is empty.");
+        var connectionString = MySqlConnectionHelper.Resolve(configuration);
 
         var serverVersion = new MySqlServerVersion(new Version(8, 0, 36));
 
         services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseMySql(connectionString, serverVersion,
-                b => b.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName)));
+            options.UseMySql(connectionString, serverVersion, mySql =>
+            {
+                mySql.MigrationsAssembly(typeof(ApplicationDbContext).Assembly.FullName);
+                mySql.EnableRetryOnFailure(
+                    maxRetryCount: 5,
+                    maxRetryDelay: TimeSpan.FromSeconds(15),
+                    errorNumbersToAdd: null);
+            }));
 
         services.AddIdentity<ApplicationUser, IdentityRole>(options =>
             {
