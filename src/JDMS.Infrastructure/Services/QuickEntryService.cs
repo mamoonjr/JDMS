@@ -69,120 +69,124 @@ public class QuickEntryService : IQuickEntryService
             .FirstOrDefaultAsync(a => a.Id == model.AreaId, cancellationToken);
         if (area == null) return Fail("المنطقة غير موجودة");
 
-        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
-        try
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
         {
-            var phone = NormalizePhone(model.PhoneNumber);
-            Customer customer;
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                var phone = NormalizePhone(model.PhoneNumber);
+                Customer customer;
 
-            if (model.ExistingCustomerId.HasValue && model.ExistingCustomerId > 0)
-            {
-                customer = await _context.Customers
-                    .FirstOrDefaultAsync(c => c.Id == model.ExistingCustomerId.Value, cancellationToken)
-                    ?? throw new InvalidOperationException("العميل غير موجود");
-                customer.FullName = model.FullName.Trim();
-                customer.MobileNumber = phone;
-                customer.SecondaryMobile = model.SecondaryPhone?.Trim();
-            }
-            else
-            {
-                var existing = await _context.Customers
-                    .FirstOrDefaultAsync(c => c.MobileNumber == phone, cancellationToken);
-                if (existing != null)
+                if (model.ExistingCustomerId.HasValue && model.ExistingCustomerId > 0)
                 {
-                    customer = existing;
+                    customer = await _context.Customers
+                        .FirstOrDefaultAsync(c => c.Id == model.ExistingCustomerId.Value, cancellationToken)
+                        ?? throw new InvalidOperationException("العميل غير موجود");
                     customer.FullName = model.FullName.Trim();
+                    customer.MobileNumber = phone;
                     customer.SecondaryMobile = model.SecondaryPhone?.Trim();
                 }
                 else
                 {
-                    var count = await _context.Customers.CountAsync(cancellationToken);
-                    customer = new Customer
+                    var existing = await _context.Customers
+                        .FirstOrDefaultAsync(c => c.MobileNumber == phone, cancellationToken);
+                    if (existing != null)
                     {
-                        CustomerCode = $"CUS-{(count + 1):D6}",
-                        FullName = model.FullName.Trim(),
-                        MobileNumber = phone,
-                        SecondaryMobile = model.SecondaryPhone?.Trim()
-                    };
-                    _context.Customers.Add(customer);
-                    await _context.SaveChangesAsync(cancellationToken);
+                        customer = existing;
+                        customer.FullName = model.FullName.Trim();
+                        customer.SecondaryMobile = model.SecondaryPhone?.Trim();
+                    }
+                    else
+                    {
+                        var count = await _context.Customers.CountAsync(cancellationToken);
+                        customer = new Customer
+                        {
+                            CustomerCode = $"CUS-{(count + 1):D6}",
+                            FullName = model.FullName.Trim(),
+                            MobileNumber = phone,
+                            SecondaryMobile = model.SecondaryPhone?.Trim()
+                        };
+                        _context.Customers.Add(customer);
+                        await _context.SaveChangesAsync(cancellationToken);
+                    }
                 }
-            }
 
-            var address = new Address
-            {
-                CustomerId = customer.Id,
-                GovernorateId = model.GovernorateId,
-                AreaId = model.AreaId,
-                Neighborhood = model.Neighborhood.Trim(),
-                Building = model.BuildingNumber.Trim(),
-                Street = model.Street?.Trim() ?? string.Empty,
-                IsDefault = false
-            };
-            _context.Addresses.Add(address);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            var settings = await _context.CompanySettings.FirstOrDefaultAsync(cancellationToken);
-            var taxRate = settings?.TaxRate ?? 0.16m;
-            var subtotal = lines.Sum(l => l.UnitPrice * l.Quantity);
-            var deliveryFee = Math.Max(0, model.DeliveryFee);
-            var discount = model.Discount;
-            var taxable = Math.Max(0, subtotal - discount);
-            var tax = Math.Round(taxable * taxRate, 2);
-            var grandTotal = subtotal + deliveryFee - discount + tax;
-
-            var orderNotes = string.IsNullOrWhiteSpace(model.Notes)
-                ? null
-                : model.Notes.Trim().Length <= 500 ? model.Notes.Trim() : model.Notes.Trim()[..500];
-
-            var order = new Order
-            {
-                OrderNumber = GenerateOrderNumber(),
-                CustomerId = customer.Id,
-                AddressId = address.Id,
-                OrderDate = DateTime.UtcNow,
-                Status = OrderStatus.New,
-                Notes = orderNotes,
-                Subtotal = subtotal,
-                DeliveryFee = deliveryFee,
-                Discount = discount,
-                Tax = tax,
-                GrandTotal = grandTotal
-            };
-            _context.Orders.Add(order);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            foreach (var line in lines)
-            {
-                _context.OrderDetails.Add(new OrderDetail
+                var address = new Address
                 {
+                    CustomerId = customer.Id,
+                    GovernorateId = model.GovernorateId,
+                    AreaId = model.AreaId,
+                    Neighborhood = model.Neighborhood.Trim(),
+                    Building = model.BuildingNumber.Trim(),
+                    Street = model.Street?.Trim() ?? string.Empty,
+                    IsDefault = false
+                };
+                _context.Addresses.Add(address);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                var settings = await _context.CompanySettings.FirstOrDefaultAsync(cancellationToken);
+                var taxRate = settings?.TaxRate ?? 0.16m;
+                var subtotal = lines.Sum(l => l.UnitPrice * l.Quantity);
+                var deliveryFee = Math.Max(0, model.DeliveryFee);
+                var discount = model.Discount;
+                var taxable = Math.Max(0, subtotal - discount);
+                var tax = Math.Round(taxable * taxRate, 2);
+                var grandTotal = subtotal + deliveryFee - discount + tax;
+
+                var orderNotes = string.IsNullOrWhiteSpace(model.Notes)
+                    ? null
+                    : model.Notes.Trim().Length <= 500 ? model.Notes.Trim() : model.Notes.Trim()[..500];
+
+                var order = new Order
+                {
+                    OrderNumber = GenerateOrderNumber(),
+                    CustomerId = customer.Id,
+                    AddressId = address.Id,
+                    OrderDate = DateTime.UtcNow,
+                    Status = OrderStatus.New,
+                    Notes = orderNotes,
+                    Subtotal = subtotal,
+                    DeliveryFee = deliveryFee,
+                    Discount = discount,
+                    Tax = tax,
+                    GrandTotal = grandTotal
+                };
+                _context.Orders.Add(order);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                foreach (var line in lines)
+                {
+                    _context.OrderDetails.Add(new OrderDetail
+                    {
+                        OrderId = order.Id,
+                        ProductId = line.ProductId,
+                        Quantity = line.Quantity,
+                        UnitPrice = line.UnitPrice,
+                        Discount = 0,
+                        LineTotal = line.UnitPrice * line.Quantity
+                    });
+                }
+                await _context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+
+                await _auditService.LogAsync(AuditActionType.OrderCreated, "Order", order.Id.ToString(),
+                    cancellationToken: cancellationToken);
+
+                return new QuickEntrySubmitResult
+                {
+                    Success = true,
+                    Message = "تم حفظ الطلب بنجاح",
                     OrderId = order.Id,
-                    ProductId = line.ProductId,
-                    Quantity = line.Quantity,
-                    UnitPrice = line.UnitPrice,
-                    Discount = 0,
-                    LineTotal = line.UnitPrice * line.Quantity
-                });
+                    OrderNumber = order.OrderNumber
+                };
             }
-            await _context.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-
-            await _auditService.LogAsync(AuditActionType.OrderCreated, "Order", order.Id.ToString(),
-                cancellationToken: cancellationToken);
-
-            return new QuickEntrySubmitResult
+            catch (Exception ex)
             {
-                Success = true,
-                Message = "تم حفظ الطلب بنجاح",
-                OrderId = order.Id,
-                OrderNumber = order.OrderNumber
-            };
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            return Fail($"حدث خطأ أثناء الحفظ: {ex.Message}");
-        }
+                await transaction.RollbackAsync(cancellationToken);
+                return Fail($"حدث خطأ أثناء الحفظ: {ex.Message}");
+            }
+        });
     }
 
     private static QuickEntrySubmitResult Fail(string message) =>

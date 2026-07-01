@@ -142,142 +142,146 @@ public class PosService : IPosService
             if (!driverExists) return Fail("السائق غير موجود أو غير نشط");
         }
 
-        await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
-        try
+        var strategy = _context.Database.CreateExecutionStrategy();
+        return await strategy.ExecuteAsync(async () =>
         {
-            var phone = NormalizePhone(model.PhoneNumber);
-            Customer customer;
+            await using var transaction = await _context.Database.BeginTransactionAsync(cancellationToken);
+            try
+            {
+                var phone = NormalizePhone(model.PhoneNumber);
+                Customer customer;
 
-            if (model.ExistingCustomerId.HasValue && model.ExistingCustomerId > 0)
-            {
-                customer = await _context.Customers
-                    .FirstOrDefaultAsync(c => c.Id == model.ExistingCustomerId.Value, cancellationToken)
-                    ?? throw new InvalidOperationException("العميل غير موجود");
-                customer.FullName = model.FullName.Trim();
-                customer.MobileNumber = phone;
-                customer.SecondaryMobile = model.SecondaryPhone?.Trim();
-            }
-            else
-            {
-                var existing = await _context.Customers
-                    .FirstOrDefaultAsync(c => c.MobileNumber == phone, cancellationToken);
-                if (existing != null)
+                if (model.ExistingCustomerId.HasValue && model.ExistingCustomerId > 0)
                 {
-                    customer = existing;
+                    customer = await _context.Customers
+                        .FirstOrDefaultAsync(c => c.Id == model.ExistingCustomerId.Value, cancellationToken)
+                        ?? throw new InvalidOperationException("العميل غير موجود");
                     customer.FullName = model.FullName.Trim();
+                    customer.MobileNumber = phone;
                     customer.SecondaryMobile = model.SecondaryPhone?.Trim();
                 }
                 else
                 {
-                    var count = await _context.Customers.CountAsync(cancellationToken);
-                    customer = new Customer
+                    var existing = await _context.Customers
+                        .FirstOrDefaultAsync(c => c.MobileNumber == phone, cancellationToken);
+                    if (existing != null)
                     {
-                        CustomerCode = $"CUS-{(count + 1):D6}",
-                        FullName = model.FullName.Trim(),
-                        MobileNumber = phone,
-                        SecondaryMobile = model.SecondaryPhone?.Trim()
-                    };
-                    _context.Customers.Add(customer);
-                    await _context.SaveChangesAsync(cancellationToken);
+                        customer = existing;
+                        customer.FullName = model.FullName.Trim();
+                        customer.SecondaryMobile = model.SecondaryPhone?.Trim();
+                    }
+                    else
+                    {
+                        var count = await _context.Customers.CountAsync(cancellationToken);
+                        customer = new Customer
+                        {
+                            CustomerCode = $"CUS-{(count + 1):D6}",
+                            FullName = model.FullName.Trim(),
+                            MobileNumber = phone,
+                            SecondaryMobile = model.SecondaryPhone?.Trim()
+                        };
+                        _context.Customers.Add(customer);
+                        await _context.SaveChangesAsync(cancellationToken);
+                    }
                 }
-            }
 
-            var deliveryNotes = Truncate(model.DeliveryNotes, 500);
-            var address = new Address
-            {
-                CustomerId = customer.Id,
-                GovernorateId = model.GovernorateId,
-                AreaId = model.AreaId,
-                Neighborhood = model.Neighborhood.Trim(),
-                Building = model.BuildingNumber.Trim(),
-                Street = model.Street?.Trim() ?? string.Empty,
-                DeliveryNotes = deliveryNotes,
-                IsDefault = false
-            };
-            _context.Addresses.Add(address);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            var settings = await _context.CompanySettings.FirstOrDefaultAsync(cancellationToken);
-            var taxRate = settings?.TaxRate ?? 0.16m;
-            var subtotal = lines.Sum(l => l.UnitPrice * l.Quantity);
-            var deliveryFee = Math.Max(0, model.DeliveryFee);
-            var discount = model.Discount;
-            var taxable = Math.Max(0, subtotal - discount);
-            var tax = Math.Round(taxable * taxRate, 2);
-            var grandTotal = subtotal + deliveryFee - discount + tax;
-
-            var orderNotes = Truncate(model.Notes, 500);
-
-            var order = new Order
-            {
-                OrderNumber = GenerateOrderNumber(),
-                CustomerId = customer.Id,
-                AddressId = address.Id,
-                OrderDate = DateTime.UtcNow,
-                Status = model.Status,
-                Notes = orderNotes,
-                PaymentMethod = model.PaymentMethod,
-                AmountReceived = Math.Max(0, model.AmountReceived),
-                ChangeDue = Math.Max(0, model.ChangeDue),
-                AssignedDriverId = model.AssignedDriverId,
-                Subtotal = subtotal,
-                DeliveryFee = deliveryFee,
-                Discount = discount,
-                Tax = tax,
-                GrandTotal = grandTotal
-            };
-            _context.Orders.Add(order);
-            await _context.SaveChangesAsync(cancellationToken);
-
-            foreach (var line in lines)
-            {
-                _context.OrderDetails.Add(new OrderDetail
+                var deliveryNotes = Truncate(model.DeliveryNotes, 500);
+                var address = new Address
                 {
-                    OrderId = order.Id,
-                    ProductId = line.ProductId,
-                    Quantity = line.Quantity,
-                    UnitPrice = line.UnitPrice,
-                    Discount = 0,
-                    LineTotal = line.UnitPrice * line.Quantity
-                });
-            }
+                    CustomerId = customer.Id,
+                    GovernorateId = model.GovernorateId,
+                    AreaId = model.AreaId,
+                    Neighborhood = model.Neighborhood.Trim(),
+                    Building = model.BuildingNumber.Trim(),
+                    Street = model.Street?.Trim() ?? string.Empty,
+                    DeliveryNotes = deliveryNotes,
+                    IsDefault = false
+                };
+                _context.Addresses.Add(address);
+                await _context.SaveChangesAsync(cancellationToken);
 
-            if (model.AssignedDriverId.HasValue)
-            {
-                _context.DeliveryTrackings.Add(new DeliveryTracking
+                var settings = await _context.CompanySettings.FirstOrDefaultAsync(cancellationToken);
+                var taxRate = settings?.TaxRate ?? 0.16m;
+                var subtotal = lines.Sum(l => l.UnitPrice * l.Quantity);
+                var deliveryFee = Math.Max(0, model.DeliveryFee);
+                var discount = model.Discount;
+                var taxable = Math.Max(0, subtotal - discount);
+                var tax = Math.Round(taxable * taxRate, 2);
+                var grandTotal = subtotal + deliveryFee - discount + tax;
+
+                var orderNotes = Truncate(model.Notes, 500);
+
+                var order = new Order
                 {
+                    OrderNumber = GenerateOrderNumber(),
+                    CustomerId = customer.Id,
+                    AddressId = address.Id,
+                    OrderDate = DateTime.UtcNow,
+                    Status = model.Status,
+                    Notes = orderNotes,
+                    PaymentMethod = model.PaymentMethod,
+                    AmountReceived = Math.Max(0, model.AmountReceived),
+                    ChangeDue = Math.Max(0, model.ChangeDue),
+                    AssignedDriverId = model.AssignedDriverId,
+                    Subtotal = subtotal,
+                    DeliveryFee = deliveryFee,
+                    Discount = discount,
+                    Tax = tax,
+                    GrandTotal = grandTotal
+                };
+                _context.Orders.Add(order);
+                await _context.SaveChangesAsync(cancellationToken);
+
+                foreach (var line in lines)
+                {
+                    _context.OrderDetails.Add(new OrderDetail
+                    {
+                        OrderId = order.Id,
+                        ProductId = line.ProductId,
+                        Quantity = line.Quantity,
+                        UnitPrice = line.UnitPrice,
+                        Discount = 0,
+                        LineTotal = line.UnitPrice * line.Quantity
+                    });
+                }
+
+                if (model.AssignedDriverId.HasValue)
+                {
+                    _context.DeliveryTrackings.Add(new DeliveryTracking
+                    {
+                        OrderId = order.Id,
+                        DriverId = model.AssignedDriverId.Value,
+                        AssignDate = DateTime.UtcNow,
+                        Status = DeliveryStatus.Assigned,
+                        DeliveryNotes = deliveryNotes
+                    });
+                }
+
+                await _context.SaveChangesAsync(cancellationToken);
+                await transaction.CommitAsync(cancellationToken);
+
+                await _auditService.LogAsync(AuditActionType.OrderCreated, "Order", order.Id.ToString(),
+                    cancellationToken: cancellationToken);
+
+                int? invoiceId = null;
+                if (model.CreateInvoice)
+                    invoiceId = await _invoiceService.CreateInvoiceForOrderAsync(order.Id, cancellationToken);
+
+                return new PosSubmitResult
+                {
+                    Success = true,
+                    Message = "تم حفظ الطلب بنجاح",
                     OrderId = order.Id,
-                    DriverId = model.AssignedDriverId.Value,
-                    AssignDate = DateTime.UtcNow,
-                    Status = DeliveryStatus.Assigned,
-                    DeliveryNotes = deliveryNotes
-                });
+                    OrderNumber = order.OrderNumber,
+                    InvoiceId = invoiceId
+                };
             }
-
-            await _context.SaveChangesAsync(cancellationToken);
-            await transaction.CommitAsync(cancellationToken);
-
-            await _auditService.LogAsync(AuditActionType.OrderCreated, "Order", order.Id.ToString(),
-                cancellationToken: cancellationToken);
-
-            int? invoiceId = null;
-            if (model.CreateInvoice)
-                invoiceId = await _invoiceService.CreateInvoiceForOrderAsync(order.Id, cancellationToken);
-
-            return new PosSubmitResult
+            catch (Exception ex)
             {
-                Success = true,
-                Message = "تم حفظ الطلب بنجاح",
-                OrderId = order.Id,
-                OrderNumber = order.OrderNumber,
-                InvoiceId = invoiceId
-            };
-        }
-        catch (Exception ex)
-        {
-            await transaction.RollbackAsync(cancellationToken);
-            return Fail($"حدث خطأ أثناء الحفظ: {ex.Message}");
-        }
+                await transaction.RollbackAsync(cancellationToken);
+                return Fail($"حدث خطأ أثناء الحفظ: {ex.Message}");
+            }
+        });
     }
 
     private static PosSubmitResult Fail(string message) =>
