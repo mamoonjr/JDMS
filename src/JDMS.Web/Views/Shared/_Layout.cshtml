@@ -1,0 +1,165 @@
+﻿@{
+
+    var isDark = Context.Request.Cookies["jdms-theme"] == "dark";
+
+}
+
+<!DOCTYPE html>
+
+<html lang="ar" dir="rtl" data-bs-theme="@(isDark ? "dark" : "light")">
+
+<head>
+
+    <meta charset="utf-8" />
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <title>@ViewData["Title"] - JDMS</title>
+
+    <link rel="stylesheet" href="~/lib/bootstrap/dist/css/bootstrap.rtl.min.css" />
+
+    <link rel="stylesheet" href="https://cdn.datatables.net/1.13.8/css/dataTables.bootstrap5.min.css" />
+
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+
+</head>
+
+<body class="jdms-body">
+
+    @if (User.Identity?.IsAuthenticated == true)
+
+    {
+
+        <div class="d-flex flex-column flex-md-row min-vh-100">
+
+            <nav class="jdms-sidebar jdms-sidebar-panel text-white p-3">
+
+                <div class="mb-4 text-center">
+                    <h5 class="mb-0">JDMS</h5>
+                    <small class="text-white-50">نظام إدارة التوصيل</small>
+                </div>
+
+                <ul class="nav flex-column gap-1">
+
+                    <li><a class="nav-link text-white" asp-controller="Dashboard" asp-action="Index">لوحة التحكم</a></li>
+
+                    <li><a class="nav-link text-warning fw-semibold" asp-controller="Pos" asp-action="Index">🛒 نقطة البيع</a></li>
+
+                    <li><a class="nav-link text-white-50" asp-controller="Customers" asp-action="Index">العملاء</a></li>
+
+                    <li><a class="nav-link text-white-50" asp-controller="Addresses" asp-action="Index">العناوين</a></li>
+
+                    <li><a class="nav-link text-white-50" asp-controller="Governorates" asp-action="Index">المحافظات والمناطق</a></li>
+
+                    <li><a class="nav-link text-white-50" asp-controller="Products" asp-action="Index">المنتجات</a></li>
+
+                    <li><a class="nav-link text-white-50" asp-controller="Orders" asp-action="Index">الطلبات</a></li>
+
+                    <li><a class="nav-link text-white-50" asp-controller="Drivers" asp-action="Index">السائقين</a></li>
+
+                    <li><a class="nav-link text-white-50" asp-controller="Deliveries" asp-action="Index">تتبع التوصيل</a></li>
+
+                    <li><a class="nav-link text-white-50" asp-controller="Invoices" asp-action="Index">الفواتير</a></li>
+
+                    <li><a class="nav-link text-white-50" asp-controller="Reports" asp-action="Index">التقارير</a></li>
+
+                    <li><a class="nav-link text-white-50" asp-controller="Expenses" asp-action="Index">المصاريف</a></li>
+
+                    @if (User.IsInRole(Roles.Administrator))
+
+                    {
+
+                        <li><a class="nav-link text-white-50" asp-controller="CompanySettings" asp-action="Index">إعدادات الشركة</a></li>
+
+                        <li><a class="nav-link text-white-50" asp-controller="Users" asp-action="Index">المستخدمين</a></li>
+
+                    }
+
+                    @if (User.IsInRole(Roles.Administrator) || User.IsInRole(Roles.Manager))
+
+                    {
+
+                        <li><a class="nav-link text-white-50" asp-controller="AuditLogs" asp-action="Index">سجل التدقيق</a></li>
+
+                    }
+
+                </ul>
+
+            </nav>
+
+            <div class="jdms-main flex-grow-1 d-flex flex-column">
+
+                <header class="jdms-top-header border-bottom bg-body px-3 py-2">
+
+                    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2">
+
+                        <div class="jdms-header-brand order-1 order-md-1">
+
+                            @await Component.InvokeAsync("CompanyBranding", new { variant = "Header" })
+
+                        </div>
+
+                        <div class="jdms-header-user order-2 order-md-2 d-flex align-items-center gap-2">
+
+                            <span class="text-muted small d-none d-sm-inline">مرحباً، <strong>@User.Identity?.Name</strong></span>
+
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="themeToggle">الوضع الداكن</button>
+
+                            <form asp-controller="Account" asp-action="Logout" method="post" class="d-inline">
+
+                                @Html.AntiForgeryToken()
+
+                                <button type="submit" class="btn btn-outline-danger btn-sm">تسجيل الخروج</button>
+
+                            </form>
+
+                        </div>
+
+                    </div>
+
+                </header>
+
+                <main class="flex-grow-1 @(ViewData["PosFullScreen"] != null ? "p-2 pos-main-wrap" : "p-4")">
+
+                    @if (ViewData["PosFullScreen"] == null)
+                    {
+                        <h4 class="mb-3">@ViewData["Title"]</h4>
+                    }
+
+                    @RenderBody()
+
+                </main>
+
+            </div>
+
+        </div>
+
+    }
+
+    else
+
+    {
+
+        <main class="container py-4">@RenderBody()</main>
+
+    }
+
+    <script src="~/lib/jquery/dist/jquery.min.js"></script>
+
+    <script src="~/lib/bootstrap/dist/js/bootstrap.bundle.min.js"></script>
+
+    <script src="https://cdn.datatables.net/1.13.8/js/jquery.dataTables.min.js"></script>
+
+    <script src="https://cdn.datatables.net/1.13.8/js/dataTables.bootstrap5.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+    <script src="~/js/site.js" asp-append-version="true"></script>
+
+    @await RenderSectionAsync("Scripts", required: false)
+
+</body>
+
+</html>
+
+

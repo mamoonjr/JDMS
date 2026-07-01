@@ -1,0 +1,82 @@
+@using JDMS.Application.DTOs
+@{
+    ViewData["Title"] = "لوحة التحكم";
+    var stats = ViewBag.Stats as DashboardStatsDto;
+    var charts = ViewBag.Charts as DashboardChartsDto;
+    var recentOrders = ViewBag.RecentOrders as IReadOnlyList<DashboardRecentOrderDto> ?? Array.Empty<DashboardRecentOrderDto>();
+}
+
+@await Component.InvokeAsync("CompanyBranding", new { variant = "Welcome" })
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6"><div class="card stat-card border-primary"><div class="card-body"><h6>إجمالي الطلبات</h6><h3>@stats?.TotalOrders</h3></div></div></div>
+    <div class="col-md-3 col-6"><div class="card stat-card border-info"><div class="card-body"><h6>طلبات جديدة</h6><h3>@stats?.NewOrders</h3></div></div></div>
+    <div class="col-md-3 col-6"><div class="card stat-card border-warning"><div class="card-body"><h6>قيد التنفيذ</h6><h3>@stats?.OrdersInProgress</h3></div></div></div>
+    <div class="col-md-3 col-6"><div class="card stat-card border-success"><div class="card-body"><h6>تم التسليم</h6><h3>@stats?.DeliveredOrders</h3></div></div></div>
+    <div class="col-md-3 col-6"><div class="card stat-card border-danger"><div class="card-body"><h6>ملغية</h6><h3>@stats?.CancelledOrders</h3></div></div></div>
+    <div class="col-md-3 col-6"><div class="card stat-card border-success"><div class="card-body"><h6>الإيرادات</h6><h3>@stats?.TotalRevenue.ToString("N2") د.أ</h3></div></div></div>
+    <div class="col-md-3 col-6"><div class="card stat-card"><div class="card-body"><h6>العملاء</h6><h3>@stats?.TotalCustomers</h3></div></div></div>
+    <div class="col-md-3 col-6"><div class="card stat-card"><div class="card-body"><h6>السائقين</h6><h3>@stats?.TotalDrivers</h3></div></div></div>
+</div>
+<div class="card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span>أحدث الطلبات</span>
+        <a asp-controller="Orders" asp-action="Index" class="btn btn-sm btn-outline-primary">كل الطلبات</a>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover mb-0">
+            <thead class="table-light">
+                <tr>
+                    <th>رقم الطلب</th>
+                    <th>العميل</th>
+                    <th>التاريخ</th>
+                    <th>الحالة</th>
+                    <th>الإجمالي</th>
+                    <th>ملاحظات الطلب</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!recentOrders.Any())
+                {
+                    <tr><td colspan="7" class="text-center text-muted">لا توجد طلبات</td></tr>
+                }
+                @foreach (var o in recentOrders)
+                {
+                    <tr>
+                        <td>@o.OrderNumber</td>
+                        <td>@o.CustomerName</td>
+                        <td>@o.OrderDate.ToString("yyyy-MM-dd")</td>
+                        <td>@o.StatusName</td>
+                        <td>@o.GrandTotal.ToString("N2") د.أ</td>
+                        <td class="small text-muted">@(string.IsNullOrWhiteSpace(o.Notes) ? "—" : (o.Notes!.Length > 60 ? o.Notes[..60] + "…" : o.Notes))</td>
+                        <td><a asp-controller="Orders" asp-action="Details" asp-route-id="@o.Id" class="btn btn-sm btn-info">تفاصيل</a></td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+<div class="row g-3">
+    <div class="col-lg-6"><div class="card"><div class="card-header">الطلبات اليومية</div><div class="card-body"><canvas id="dailyOrdersChart"></canvas></div></div></div>
+    <div class="col-lg-6"><div class="card"><div class="card-header">الإيرادات الشهرية</div><div class="card-body"><canvas id="monthlyRevenueChart"></canvas></div></div></div>
+    <div class="col-lg-6"><div class="card"><div class="card-header">الطلبات حسب المحافظة</div><div class="card-body"><canvas id="govChart"></canvas></div></div></div>
+    <div class="col-lg-6"><div class="card"><div class="card-header">الطلبات حسب الحالة</div><div class="card-body"><canvas id="statusChart"></canvas></div></div></div>
+</div>
+@section Scripts {
+<script>
+const daily = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(charts?.DailyOrders ?? new List<ChartPointDto>()));
+const monthly = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(charts?.MonthlyRevenue ?? new List<ChartPointDto>()));
+const gov = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(charts?.OrdersByGovernorate ?? new List<ChartPointDto>()));
+const status = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(charts?.OrdersByStatus ?? new List<ChartPointDto>()));
+function makeChart(id, data, type='bar') {
+    const ctx = document.getElementById(id);
+    if (!ctx || !data.length) return;
+    new Chart(ctx, { type, data: { labels: data.map(x=>x.label), datasets: [{ label: 'القيمة', data: data.map(x=>x.value), backgroundColor: '#0d6efd88' }] }, options: { responsive: true } });
+}
+makeChart('dailyOrdersChart', daily, 'line');
+makeChart('monthlyRevenueChart', monthly, 'bar');
+makeChart('govChart', gov, 'doughnut');
+makeChart('statusChart', status, 'pie');
+</script>
+}

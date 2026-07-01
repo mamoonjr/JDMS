@@ -1,0 +1,12 @@
+@model IEnumerable<ProductDto>
+@{ ViewData["Title"] = "المنتجات"; }
+<div class="mb-3 d-flex justify-content-between">
+    <form method="get" class="d-flex gap-2"><input name="search" value="@ViewBag.Search" class="form-control" placeholder="بحث" /><button class="btn btn-secondary">بحث</button></form>
+    <a asp-action="Create" class="btn btn-primary">إضافة منتج</a>
+</div>
+<table class="table table-striped jdms-table">
+    <thead><tr><th>الاسم</th><th>SKU</th><th>السعر</th><th>نشط</th><th></th></tr></thead>
+    <tbody>@foreach(var p in Model){<tr><td>@p.ProductName</td><td>@p.SKU</td><td>@p.UnitPrice.ToString("N2")</td><td>@(p.IsActive?"نعم":"لا")</td>
+    <td><a asp-action="Edit" asp-route-id="@p.Id" class="btn btn-sm btn-warning">تعديل</a>
+    <form asp-action="Delete" method="post" class="d-inline">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@p.Id"/><button class="btn btn-sm btn-danger">حذف</button></form></td></tr>}</tbody>
+</table>

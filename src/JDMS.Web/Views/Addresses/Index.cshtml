@@ -1,0 +1,5 @@
+@model IEnumerable<AddressDto>
+@{ ViewData["Title"] = "العناوين"; }
+<a asp-action="Create" class="btn btn-primary mb-3">إضافة عنوان</a>
+<table class="table jdms-table"><thead><tr><th>المحافظة</th><th>المنطقة</th><th>الشارع</th><th>المبنى</th><th>خرائط</th></tr></thead>
+<tbody>@foreach(var a in Model){<tr><td>@a.GovernorateName</td><td>@a.AreaName</td><td>@a.Street</td><td>@a.Building</td><td>@if(!string.IsNullOrEmpty(a.GoogleMapsLink)){<a href="@a.GoogleMapsLink" target="_blank">رابط</a>}</td></tr>}</tbody></table>

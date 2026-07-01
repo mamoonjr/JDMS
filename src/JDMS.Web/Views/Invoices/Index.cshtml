@@ -1,0 +1,9 @@
+@model IEnumerable<JDMS.Domain.Entities.Invoice>
+@{ ViewData["Title"] = "الفواتير"; }
+<table class="table jdms-table"><thead><tr><th>رقم الفاتورة</th><th>الطلب</th><th>التاريخ</th><th>الإجمالي</th><th></th></tr></thead>
+<tbody>@foreach(var i in Model){<tr><td>@i.InvoiceNumber</td><td>@i.OrderId</td><td>@i.InvoiceDate.ToString("yyyy-MM-dd")</td><td>@i.GrandTotal.ToString("N2")</td>
+<td>
+<a asp-action="Print" asp-route-orderId="@i.OrderId" target="_blank" class="btn btn-sm btn-primary">طباعة</a>
+<a asp-action="Download" asp-route-orderId="@i.OrderId" class="btn btn-sm btn-success">PDF</a>
+</td></tr>}</tbody></table>
+<p class="text-muted">لإنشاء فاتورة لطلب: افتح تفاصيل الطلب أو استخدم رابط الطباعة (يُنشئ الفاتورة تلقائياً).</p>

@@ -1,0 +1,7 @@
+@model ReportDataDto
+@{ ViewData["Title"] = Model.Title; }
+<div class="card"><div class="card-header">@Model.Title - العدد: @Model.TotalCount | الإجمالي: @Model.TotalAmount.ToString("N2")</div>
+<div class="card-body table-responsive">
+<table class="table table-sm jdms-table"><thead><tr>@if(Model.Rows.Any()){foreach(var k in Model.Rows[0].Keys){<th>@k</th>}}</tr></thead>
+<tbody>@foreach(var row in Model.Rows){<tr>@foreach(var kv in row){<td>@kv.Value</td>}</tr>}</tbody>
+</table></div></div>

@@ -1,0 +1,6 @@
+@model IEnumerable<UserViewModel>
+@{ ViewData["Title"] = "المستخدمين"; }
+<a asp-action="Create" class="btn btn-primary mb-3">مستخدم جديد</a>
+<table class="table jdms-table"><thead><tr><th>المستخدم</th><th>البريد</th><th>الاسم</th><th>الدور</th><th>نشط</th><th></th></tr></thead>
+<tbody>@foreach(var u in Model){<tr><td>@u.UserName</td><td>@u.Email</td><td>@u.FullName</td><td>@u.Role</td><td>@(u.IsActive?"نعم":"لا")</td>
+<td><form asp-action="ToggleActive" method="post">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@u.Id"/><button class="btn btn-sm btn-warning">تبديل الحالة</button></form></td></tr>}</tbody></table>

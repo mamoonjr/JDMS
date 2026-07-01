@@ -1,0 +1,27 @@
+@model OrderDto
+@{ ViewData["Title"] = "تفاصيل الطلب"; }
+<div class="card mb-3"><div class="card-body">
+<p><strong>رقم الطلب:</strong> @Model.OrderNumber | <strong>العميل:</strong> @Model.CustomerName</p>
+<p><strong>العنوان:</strong> @Model.AddressSummary | <strong>التاريخ:</strong> @Model.OrderDate.ToString("yyyy-MM-dd")</p>
+<p><strong>الإجمالي:</strong> @Model.GrandTotal.ToString("N2") د.أ (فرعي: @Model.Subtotal | توصيل: @Model.DeliveryFee | خصم: @Model.Discount | ضريبة: @Model.Tax)</p>
+@if (!string.IsNullOrWhiteSpace(Model.Notes))
+{
+    <div class="alert alert-light border mt-2 mb-0">
+        <strong>ملاحظات الطلب:</strong>
+        <div class="mt-1">@Model.Notes</div>
+    </div>
+}
+<form asp-action="UpdateStatus" method="post" class="d-flex gap-2 align-items-center">@Html.AntiForgeryToken()
+<input type="hidden" name="id" value="@Model.Id"/>
+<select name="status" class="form-select w-auto"><option value="0">جديد</option><option value="1">قيد المعالجة</option><option value="2">جاهز للتوصيل</option><option value="3">قيد التوصيل</option><option value="4">تم التسليم</option><option value="5">ملغي</option><option value="6">مرتجع</option></select>
+<button class="btn btn-warning btn-sm">تحديث الحالة</button></form>
+</div></div>
+<table class="table"><thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الخصم</th><th>الإجمالي</th></tr></thead>
+<tbody>@foreach(var d in Model.Details){<tr><td>@d.ProductName</td><td>@d.Quantity</td><td>@d.UnitPrice.ToString("N2")</td><td>@d.Discount.ToString("N2")</td><td>@d.LineTotal.ToString("N2")</td></tr>}</tbody></table>
+<div class="d-flex gap-2">
+<a asp-controller="Invoices" asp-action="Print" asp-route-orderId="@Model.Id" class="btn btn-success" target="_blank">طباعة A4</a>
+<a asp-controller="Invoices" asp-action="PrintThermal" asp-route-orderId="@Model.Id" class="btn btn-outline-success" target="_blank">إيصال حراري</a>
+<a asp-controller="Invoices" asp-action="Download" asp-route-orderId="@Model.Id" class="btn btn-outline-secondary">تحميل PDF</a>
+<a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">تعديل</a>
+<a asp-action="Index" class="btn btn-secondary">رجوع</a>
+</div>

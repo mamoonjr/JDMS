@@ -1,0 +1,157 @@
+/* POS — RTL professional layout */
+.pos-page {
+    --pos-accent: #0d6efd;
+    --pos-panel-bg: var(--bs-body-bg);
+    --pos-header-bg: #e8f4fc;
+    --pos-border: var(--bs-border-color);
+    --pos-card-hover: rgba(13, 110, 253, 0.12);
+}
+
+[data-bs-theme="dark"] .pos-page {
+    --pos-panel-bg: #383f52;
+    --pos-header-bg: #424c62;
+    --pos-border: #5c677d;
+    --pos-card-hover: rgba(126, 176, 240, 0.18);
+}
+
+[data-bs-theme="dark"] .pos-product-card {
+    background: #3d4559;
+    border-color: #5c677d;
+}
+
+[data-bs-theme="dark"] .pos-panel {
+    box-shadow: 0 1px 4px rgba(0, 0, 0, 0.2);
+}
+
+.pos-main-wrap {
+    overflow-x: hidden;
+}
+
+.pos-toolbar h5 {
+    color: var(--bs-body-color);
+}
+
+.pos-stat-badge {
+    background: var(--pos-header-bg);
+    border: 1px solid var(--pos-border);
+    border-radius: 0.5rem;
+    padding: 0.35rem 0.65rem;
+    font-size: 0.8rem;
+    white-space: nowrap;
+}
+
+.pos-panel {
+    background: var(--pos-panel-bg);
+    border: 1px solid var(--pos-border);
+    border-radius: 0.5rem;
+    overflow: hidden;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+.pos-panel-header {
+    background: var(--pos-header-bg);
+    color: var(--bs-body-color);
+    font-weight: 600;
+    padding: 0.5rem 0.75rem;
+    border-bottom: 1px solid var(--pos-border);
+    font-size: 0.9rem;
+}
+
+.pos-panel-body {
+    padding: 0.75rem;
+}
+
+.pos-panel-products .pos-panel-body {
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+}
+
+.pos-product-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+    gap: 0.5rem;
+}
+
+.pos-product-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 0.5rem;
+    border: 1px solid var(--pos-border);
+    border-radius: 0.5rem;
+    background: var(--bs-body-bg);
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+}
+
+.pos-product-card:hover,
+.pos-product-card:focus {
+    background: var(--pos-card-hover);
+    border-color: var(--pos-accent);
+    outline: none;
+    transform: translateY(-1px);
+}
+
+.pos-product-card img {
+    width: 64px;
+    height: 64px;
+    object-fit: contain;
+    margin-bottom: 0.25rem;
+}
+
+.pos-product-name {
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.2;
+    max-height: 2.4em;
+    overflow: hidden;
+}
+
+.pos-product-price {
+    font-size: 0.8rem;
+    color: var(--pos-accent);
+    font-weight: 700;
+}
+
+.pos-cart-table-wrap {
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.pos-cart-table th,
+.pos-cart-table td {
+    font-size: 0.8rem;
+    vertical-align: middle;
+}
+
+.pos-cart-table input.qty-input {
+    width: 48px;
+    text-align: center;
+    padding: 0.15rem;
+}
+
+.pos-summary {
+    background: var(--pos-header-bg);
+    border-top: 1px solid var(--pos-border);
+    font-size: 0.85rem;
+}
+
+.pos-grand-total {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--pos-accent);
+    margin-top: 0.25rem;
+    padding-top: 0.25rem;
+    border-top: 1px dashed var(--pos-border);
+}
+
+.pos-actions .btn {
+    font-size: 0.85rem;
+}
+
+@media (max-width: 991.98px) {
+    .pos-panel-products .pos-panel-body {
+        max-height: 320px;
+    }
+}

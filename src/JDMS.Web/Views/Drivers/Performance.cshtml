@@ -1,0 +1,6 @@
+@model JDMS.Domain.Entities.Driver
+@{ ViewData["Title"] = "أداء السائق"; }
+<h5>@Model.DriverName</h5>
+<p>إجمالي التوصيلات: @Model.DeliveryTrackings.Count | المكتملة: @Model.DeliveryTrackings.Count(t => t.Status == JDMS.Domain.Enums.DeliveryStatus.Delivered)</p>
+<table class="table"><thead><tr><th>الطلب</th><th>تاريخ التعيين</th><th>الحالة</th></tr></thead>
+<tbody>@foreach(var t in Model.DeliveryTrackings){<tr><td>@t.Order?.OrderNumber</td><td>@t.AssignDate.ToString("yyyy-MM-dd")</td><td>@t.Status</td></tr>}</tbody></table>

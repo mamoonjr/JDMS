@@ -1,0 +1,13 @@
+@model CustomerCreateDto
+@{ ViewData["Title"] = "تعديل عميل"; }
+<form method="post">
+    @Html.AntiForgeryToken()
+    <div class="row g-3">
+        <div class="col-md-6"><label class="form-label">الاسم الكامل</label><input asp-for="FullName" class="form-control" required /></div>
+        <div class="col-md-6"><label class="form-label">الجوال</label><input asp-for="MobileNumber" class="form-control" required /></div>
+        <div class="col-md-6"><label class="form-label">جوال ثانوي</label><input asp-for="SecondaryMobile" class="form-control" /></div>
+        <div class="col-md-6"><label class="form-label">البريد</label><input asp-for="Email" class="form-control" /></div>
+        <div class="col-12"><label class="form-label">ملاحظات</label><textarea asp-for="Notes" class="form-control"></textarea></div>
+    </div>
+    <button type="submit" class="btn btn-primary mt-3">حفظ</button>
+</form>

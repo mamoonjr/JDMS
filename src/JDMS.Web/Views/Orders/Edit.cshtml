@@ -1,0 +1,39 @@
+@model OrderCreateDto
+@{
+    ViewData["Title"] = "تعديل الطلب";
+    var customers = ViewBag.Customers;
+    var products = ViewBag.Products;
+    var addresses = ViewBag.Addresses;
+    var orderId = ViewContext.RouteData.Values["id"];
+}
+<form method="post" asp-action="Edit" asp-route-id="@orderId">@Html.AntiForgeryToken()
+<div class="row g-3 mb-3">
+<div class="col-md-4"><label>العميل</label><select asp-for="CustomerId" class="form-select" id="customerId" required>@foreach(dynamic c in customers){<option value="@c.Id">@c.FullName</option>}</select></div>
+<div class="col-md-4"><label>العنوان</label><select asp-for="AddressId" class="form-select" id="addressId" required></select></div>
+<div class="col-md-4"><label>تاريخ التوصيل</label><input asp-for="DeliveryDate" type="date" class="form-control"/></div>
+<div class="col-md-4"><label>خصم الطلب</label><input asp-for="OrderDiscount" type="number" step="0.01" class="form-control"/></div>
+<div class="col-12">
+    <label asp-for="Notes" class="form-label">ملاحظات الطلب</label>
+    <textarea asp-for="Notes" class="form-control" rows="3" maxlength="500"
+              placeholder="أدخل تعليمات خاصة للتوصيل (مثل: الاتصال قبل التوصيل، التسليم بعد الساعة 5 مساءً)"></textarea>
+    <span asp-validation-for="Notes" class="text-danger"></span>
+</div>
+</div>
+<table class="table" id="linesTable"><thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>خصم</th></tr></thead>
+<tbody>
+@for(var i=0;i<Model.Details.Count;i++){
+<tr><td><select name="Details[@i].ProductId" class="form-select">@foreach(dynamic p in products){<option value="@p.Id">@p.ProductName</option>}</select></td>
+<td><input name="Details[@i].Quantity" type="number" min="1" value="@Model.Details[i].Quantity" class="form-control"/></td>
+<td><input name="Details[@i].UnitPrice" type="number" step="0.01" value="@Model.Details[i].UnitPrice" class="form-control"/></td>
+<td><input name="Details[@i].Discount" type="number" step="0.01" value="@Model.Details[i].Discount" class="form-control"/></td></tr>}
+</tbody></table>
+<button type="submit" class="btn btn-primary">حفظ التعديلات</button>
+<a asp-action="Details" asp-route-id="@orderId" class="btn btn-secondary">إلغاء</a>
+</form>
+@section Scripts{
+<partial name="_ValidationScriptsPartial" />
+<script>
+const addresses = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(addresses));
+function filterAddresses(){const cid=$('#customerId').val();const sel=$('#addressId').empty();addresses.filter(a=>a.customerId==cid).forEach(a=>sel.append($('<option>',{value:a.id,text:a.label}))); sel.val('@Model.AddressId');}
+$('#customerId').on('change',filterAddresses); filterAddresses();
+</script>}

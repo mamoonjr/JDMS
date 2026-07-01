@@ -1,0 +1,174 @@
+@model QuickEntryViewModel
+@{
+    ViewData["Title"] = "إدخال سريع - عميل وطلب";
+    var governorates = ViewBag.Governorates;
+    var products = ViewBag.Products;
+}
+<link rel="stylesheet" href="~/css/quick-entry.css" asp-append-version="true" />
+
+<form id="quickEntryForm" class="quick-entry-page">
+    @Html.AntiForgeryToken()
+    <input type="hidden" id="existingCustomerId" name="ExistingCustomerId" value="" />
+
+    <div class="card shadow-sm mb-3 section-card">
+        <div class="card-header bg-primary text-white">
+            <strong>1. بيانات العميل</strong>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-4">
+                    <label class="form-label">رقم الهاتف <span class="text-danger">*</span></label>
+                    <input type="tel" id="phoneNumber" name="PhoneNumber" class="form-control form-control-lg"
+                           required autocomplete="off" inputmode="tel" placeholder="07XXXXXXXX" />
+                    <small id="phoneStatus" class="text-muted"></small>
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">الاسم الكامل <span class="text-danger">*</span></label>
+                    <input type="text" id="fullName" name="FullName" class="form-control form-control-lg" required />
+                </div>
+                <div class="col-md-4">
+                    <label class="form-label">هاتف ثانوي</label>
+                    <input type="tel" id="secondaryPhone" name="SecondaryPhone" class="form-control" />
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3 section-card">
+        <div class="card-header bg-success text-white">
+            <strong>2. العنوان (الأردن)</strong>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">المحافظة <span class="text-danger">*</span></label>
+                    <select id="governorateId" name="GovernorateId" class="form-select" required>
+                        <option value="">-- اختر --</option>
+                        @foreach (dynamic g in governorates)
+                        {
+                            <option value="@g.Id">@g.NameAr</option>
+                        }
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">المنطقة <span class="text-danger">*</span></label>
+                    <select id="areaId" name="AreaId" class="form-select" required disabled>
+                        <option value="">-- اختر المحافظة أولاً --</option>
+                    </select>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">الحي / المنطقة السكنية <span class="text-danger">*</span></label>
+                    <input type="text" id="neighborhood" name="Neighborhood" class="form-control" required />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">رقم المبنى <span class="text-danger">*</span></label>
+                    <input type="text" id="buildingNumber" name="BuildingNumber" class="form-control" required />
+                </div>
+                <div class="col-md-6">
+                    <label class="form-label">الشارع (اختياري)</label>
+                    <input type="text" id="street" name="Street" class="form-control" />
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">رسوم التوصيل (د.أ)</label>
+                    <input type="number" id="deliveryFeeInput" name="DeliveryFee" class="form-control"
+                           min="0" step="0.01" value="0" />
+                    <small class="text-muted">أدخل رسوم التوصيل يدوياً</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3 section-card">
+        <div class="card-header bg-info text-white">
+            <strong>3. ملاحظات الطلب (اختياري)</strong>
+        </div>
+        <div class="card-body">
+            <textarea id="orderNotes" name="Notes" class="form-control" rows="3" maxlength="500"
+                      placeholder="أدخل تعليمات خاصة للتوصيل (مثل: الاتصال قبل التوصيل، التسليم بعد الساعة 5 مساءً)"></textarea>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-3 section-card">
+        <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center">
+            <strong>4. بنود الطلب</strong>
+            <button type="button" class="btn btn-sm btn-dark" id="addLineBtn">+ إضافة منتج</button>
+        </div>
+        <div class="card-body p-0">
+            <div class="table-responsive">
+                <table class="table table-hover mb-0" id="linesTable">
+                    <thead class="table-light">
+                        <tr>
+                            <th style="width:40%">المنتج</th>
+                            <th style="width:15%">الكمية</th>
+                            <th style="width:20%">السعر</th>
+                            <th style="width:15%">الإجمالي</th>
+                            <th style="width:10%"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="linesBody">
+                        <tr class="line-row">
+                            <td>
+                                <select class="form-select product-select" name="Lines[0].ProductId" required>
+                                    <option value="">-- منتج --</option>
+                                    @foreach (dynamic p in products)
+                                    {
+                                        <option value="@p.Id" data-price="@p.UnitPrice">@p.ProductName</option>
+                                    }
+                                </select>
+                            </td>
+                            <td><input type="number" class="form-control qty-input" name="Lines[0].Quantity" min="1" value="1" required /></td>
+                            <td><input type="number" class="form-control price-input" name="Lines[0].UnitPrice" min="0" step="0.01" required /></td>
+                            <td class="line-total align-middle fw-bold">0.00</td>
+                            <td><button type="button" class="btn btn-sm btn-outline-danger remove-line" title="حذف">×</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="card shadow-sm mb-4 section-card summary-section">
+        <div class="card-header summary-section-header">
+            <strong>5. الملخص</strong>
+        </div>
+        <div class="card-body">
+            <div class="row g-3">
+                <div class="col-md-3">
+                    <label class="form-label">خصم (د.أ)</label>
+                    <input type="number" id="discount" name="Discount" class="form-control" min="0" step="0.01" value="0" />
+                </div>
+                <div class="col-md-9">
+                    <div class="summary-box p-3 rounded">
+                        <div class="d-flex justify-content-between mb-2"><span>المجموع الفرعي:</span><span id="subtotalDisplay">0.00</span></div>
+                        <div class="d-flex justify-content-between mb-2"><span>رسوم التوصيل:</span><span id="deliverySummary">0.00</span></div>
+                        <div class="d-flex justify-content-between mb-2"><span>الخصم:</span><span id="discountDisplay">0.00</span></div>
+                        <hr />
+                        <div class="d-flex justify-content-between fs-4 fw-bold text-primary">
+                            <span>الإجمالي:</span><span id="grandTotalDisplay">0.00 د.أ</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="mt-3 d-flex flex-wrap gap-2">
+                <button type="submit" class="btn btn-primary btn-lg px-5" id="saveBtn">
+                    <span class="save-text">حفظ الطلب</span>
+                    <span class="spinner-border spinner-border-sm d-none" role="status"></span>
+                </button>
+                <button type="button" class="btn btn-outline-secondary btn-lg" id="resetBtn">مسح النموذج</button>
+            </div>
+            <div id="submitAlert" class="alert mt-3 d-none" role="alert"></div>
+        </div>
+    </div>
+</form>
+
+@section Scripts {
+    <script>
+        window.quickEntryConfig = {
+            lookupUrl: '@Url.Action("LookupCustomer", "QuickEntry")',
+            areasUrl: '@Url.Action("GetAreas", "QuickEntry")',
+            submitUrl: '@Url.Action("Submit", "QuickEntry")',
+            printUrl: '@Url.Action("Print", "Invoices")'
+        };
+    </script>
+    <script src="~/js/quick-entry.js" asp-append-version="true"></script>
+}

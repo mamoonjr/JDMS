@@ -1,0 +1,10 @@
+@model UserCreateViewModel
+@{ ViewData["Title"] = "مستخدم جديد"; }
+<form method="post">@Html.AntiForgeryToken()
+<div class="row g-3">
+<div class="col-md-6"><label>اسم المستخدم</label><input asp-for="UserName" class="form-control" required/></div>
+<div class="col-md-6"><label>البريد</label><input asp-for="Email" class="form-control" required/></div>
+<div class="col-md-6"><label>الاسم الكامل</label><input asp-for="FullName" class="form-control" required/></div>
+<div class="col-md-6"><label>كلمة المرور</label><input asp-for="Password" type="password" class="form-control" required/></div>
+<div class="col-md-6"><label>الدور</label><select asp-for="Role" class="form-select"><option>Administrator</option><option>Manager</option><option>Employee</option></select></div>
+</div><button class="btn btn-primary mt-3">حفظ</button></form>

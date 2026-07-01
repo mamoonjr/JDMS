@@ -1,0 +1,63 @@
+@{
+
+    ViewData["Title"] = "تسجيل الدخول";
+
+    Layout = "_Layout";
+
+}
+
+<div class="row justify-content-center mt-4">
+
+    <div class="col-md-5 col-lg-4">
+
+        <div class="card shadow">
+
+            <div class="card-body p-4">
+
+                @await Component.InvokeAsync("CompanyBranding", new { variant = "Login" })
+
+                <form method="post" asp-action="Login">
+
+                    @Html.AntiForgeryToken()
+
+                    <div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+                    <div class="mb-3">
+
+                        <label class="form-label">اسم المستخدم</label>
+
+                        <input type="text" name="userName" class="form-control" value="admin" required autofocus autocomplete="username" />
+
+                    </div>
+
+                    <div class="mb-3">
+
+                        <label class="form-label">كلمة المرور</label>
+
+                        <input type="password" name="password" class="form-control" required autocomplete="current-password" />
+
+                    </div>
+
+                    <button type="submit" class="btn btn-primary w-100">دخول</button>
+
+                </form>
+
+                <div class="alert alert-info mt-3 small mb-0">
+
+                    <strong>بيانات الدخول:</strong><br />
+
+                    اسم المستخدم: <code>admin</code><br />
+
+                    كلمة المرور: <code>Admin@@123</code>
+
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+

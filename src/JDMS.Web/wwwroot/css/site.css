@@ -1,0 +1,288 @@
+:root {
+    --jdms-sidebar-width: 260px;
+    --jdms-sidebar-bg: linear-gradient(180deg, #2a6fa8 0%, #1e4f7a 100%);
+    --jdms-sidebar-border: #1a4468;
+    --jdms-sidebar-text: #ffffff;
+    --jdms-sidebar-muted: rgba(255, 255, 255, 0.88);
+    --jdms-sidebar-hover-bg: rgba(255, 255, 255, 0.14);
+}
+
+/* وضع داكن مريح — ألوان رمادية-زرقاء بدل الأسود */
+[data-bs-theme="dark"] {
+    color-scheme: dark;
+    --bs-body-bg: #2e3648;
+    --bs-body-color: #e4e9f0;
+    --bs-emphasis-color: #f2f5f9;
+    --bs-secondary-color: rgba(228, 233, 240, 0.78);
+    --bs-secondary-bg: #3a4358;
+    --bs-tertiary-color: rgba(228, 233, 240, 0.55);
+    --bs-tertiary-bg: #353d50;
+    --bs-border-color: #525d73;
+    --bs-border-color-translucent: rgba(255, 255, 255, 0.14);
+    --bs-heading-color: #f0f3f8;
+    --bs-link-color: #8ec0ff;
+    --bs-link-hover-color: #b3d4ff;
+    --bs-card-bg: #383f52;
+    --bs-card-border-color: #525d73;
+    --bs-card-cap-bg: #404861;
+    --bs-table-color: var(--bs-body-color);
+    --bs-table-bg: transparent;
+    --bs-table-border-color: var(--bs-border-color);
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.045);
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.07);
+    --bs-table-active-bg: rgba(255, 255, 255, 0.09);
+    --bs-form-control-bg: #3d4559;
+    --bs-form-control-disabled-bg: #343b4d;
+    --bs-form-control-border-color: #5c677d;
+    --bs-form-control-focus-border-color: #7eb0f0;
+    --bs-form-control-focus-box-shadow: 0 0 0 0.2rem rgba(126, 176, 240, 0.25);
+    --bs-form-select-bg: #3d4559;
+    --bs-form-select-border-color: #5c677d;
+    --bs-input-group-addon-bg: #404861;
+    --bs-input-group-addon-border-color: #5c677d;
+    --bs-modal-bg: #383f52;
+    --bs-modal-border-color: #525d73;
+    --bs-dropdown-bg: #383f52;
+    --bs-dropdown-border-color: #525d73;
+    --bs-dropdown-link-hover-bg: #454e64;
+    --bs-dropdown-link-active-bg: #4a5f7f;
+    --bs-btn-close-filter: invert(1) grayscale(100%) brightness(1.15);
+    --bs-focus-ring-color: rgba(126, 176, 240, 0.35);
+    --bs-code-color: #c5d4e8;
+    --bs-highlight-bg: #4a5568;
+    --bs-highlight-color: #f2f5f9;
+    --jdms-sidebar-bg: linear-gradient(180deg, #44566b 0%, #3a4a5e 100%);
+    --jdms-sidebar-border: #526075;
+    --jdms-sidebar-muted: rgba(232, 238, 245, 0.85);
+    --jdms-sidebar-hover-bg: rgba(255, 255, 255, 0.1);
+}
+
+.jdms-body {
+    min-height: 100vh;
+    font-family: 'Segoe UI', Tahoma, Arial, sans-serif;
+}
+
+.jdms-sidebar {
+    width: var(--jdms-sidebar-width);
+    min-height: 100vh;
+    position: sticky;
+    top: 0;
+}
+
+/* الشريط الجانبي (يمين الشاشة RTL) — لون متناسق، بدون أسود Bootstrap */
+.jdms-sidebar.jdms-sidebar-panel,
+.jdms-sidebar.bg-dark {
+    background: var(--jdms-sidebar-bg) !important;
+    border-inline-end: 1px solid var(--jdms-sidebar-border);
+    color: var(--jdms-sidebar-text);
+    box-shadow: -2px 0 10px rgba(30, 79, 122, 0.1);
+}
+
+[data-bs-theme="light"] .jdms-sidebar.jdms-sidebar-panel,
+[data-bs-theme="light"] .jdms-sidebar.bg-dark {
+    box-shadow: -2px 0 12px rgba(30, 79, 122, 0.12);
+}
+
+[data-bs-theme="dark"] .jdms-sidebar.jdms-sidebar-panel,
+[data-bs-theme="dark"] .jdms-sidebar.bg-dark {
+    box-shadow: none;
+}
+
+.jdms-sidebar .nav-link.text-white-50 {
+    color: var(--jdms-sidebar-muted) !important;
+}
+
+.jdms-sidebar .nav-link.text-white,
+.jdms-sidebar .nav-link.text-warning {
+    color: var(--jdms-sidebar-text) !important;
+}
+
+.jdms-sidebar .nav-link:hover,
+.jdms-sidebar .nav-link.text-warning:hover,
+.jdms-sidebar .nav-link.text-white-50:hover {
+    color: var(--jdms-sidebar-text) !important;
+    background: var(--jdms-sidebar-hover-bg);
+    border-radius: 0.35rem;
+}
+
+.jdms-sidebar h5,
+.jdms-sidebar .text-white-50 {
+    color: var(--jdms-sidebar-muted) !important;
+}
+
+.jdms-sidebar h5 {
+    color: var(--jdms-sidebar-text) !important;
+}
+
+.jdms-main {
+    background: var(--bs-body-bg);
+    min-height: 100vh;
+}
+
+.stat-card h3 {
+    margin: 0;
+    font-weight: 700;
+}
+
+.stat-card h6 {
+    color: var(--bs-secondary-color);
+    font-size: 0.85rem;
+}
+
+[data-bs-theme="dark"] .jdms-top-header {
+    background: linear-gradient(180deg, #3a4358 0%, #343c4f 100%) !important;
+    border-bottom-color: #525d73 !important;
+}
+
+[data-bs-theme="dark"] .jdms-top-header .jdms-brand .jdms-company-name {
+    color: #e8f0fa;
+}
+
+[data-bs-theme="dark"] .jdms-top-header .jdms-brand:hover .jdms-company-name {
+    color: #b3d4ff;
+}
+
+[data-bs-theme="dark"] .card,
+[data-bs-theme="dark"] .list-group-item {
+    background-color: var(--bs-card-bg);
+    border-color: var(--bs-border-color);
+    color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .table {
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: rgba(255, 255, 255, 0.04);
+    --bs-table-hover-bg: rgba(255, 255, 255, 0.07);
+}
+
+[data-bs-theme="dark"] .dataTables_wrapper .dataTables_filter input,
+[data-bs-theme="dark"] .dataTables_wrapper .dataTables_length select {
+    background-color: var(--bs-form-control-bg);
+    color: var(--bs-body-color);
+    border-color: var(--bs-form-control-border-color);
+}
+
+[data-bs-theme="dark"] .btn-outline-secondary {
+    --bs-btn-color: #d0d8e4;
+    --bs-btn-border-color: #6b7789;
+    --bs-btn-hover-bg: #4a5568;
+    --bs-btn-hover-border-color: #7a8799;
+    --bs-btn-hover-color: #fff;
+}
+
+.jdms-top-header {
+    position: sticky;
+    top: 0;
+    z-index: 1020;
+}
+
+/* الهيدر — الوضع الفاتح: خلفية فاتحة ونص بأزرق بدل الأسود */
+[data-bs-theme="light"] .jdms-top-header {
+    background: linear-gradient(180deg, #ffffff 0%, #f0f5fc 100%) !important;
+    border-bottom-color: #c5d5eb !important;
+}
+
+[data-bs-theme="light"] .jdms-top-header .jdms-brand .jdms-company-name {
+    color: #1a4d7a;
+}
+
+[data-bs-theme="light"] .jdms-top-header .jdms-brand:hover .jdms-company-name {
+    color: #0d6efd;
+}
+
+[data-bs-theme="light"] .jdms-top-header .jdms-header-user .text-muted {
+    color: #5a6b7d !important;
+}
+
+[data-bs-theme="light"] .jdms-top-header .jdms-header-user strong {
+    color: #1a4d7a;
+}
+
+.jdms-brand .jdms-company-name {
+    color: var(--bs-body-color);
+    font-weight: 600;
+    font-size: 1rem;
+    line-height: 1.3;
+}
+
+.jdms-sidebar .jdms-brand,
+.jdms-sidebar .jdms-brand .jdms-company-name {
+    color: #fff;
+    font-size: 0.85rem;
+}
+
+.jdms-sidebar .jdms-brand:hover {
+    color: #e9ecef;
+}
+
+.jdms-logo {
+    height: 56px;
+    width: auto;
+    max-width: 120px;
+    object-fit: contain;
+}
+
+.jdms-logo-login {
+    height: 72px;
+    width: auto;
+    max-width: 160px;
+    object-fit: contain;
+}
+
+.jdms-logo-welcome {
+    height: 80px;
+    width: auto;
+    max-width: 140px;
+    object-fit: contain;
+}
+
+.jdms-logo-settings {
+    height: 100px;
+    width: auto;
+    max-width: 180px;
+    object-fit: contain;
+    border: 1px solid var(--bs-border-color);
+    border-radius: 0.5rem;
+    padding: 0.5rem;
+    background: #fff;
+}
+
+.jdms-welcome-card {
+    background: linear-gradient(135deg, #e7f1ff 0%, #f8f9fa 100%);
+}
+
+[data-bs-theme="dark"] .jdms-welcome-card {
+    background: linear-gradient(135deg, #3d5a7a 0%, #3a4358 100%);
+    color: var(--bs-body-color);
+}
+
+[data-bs-theme="dark"] .jdms-logo-settings {
+    background: #454e64;
+    border-color: #5c677d;
+}
+
+[data-bs-theme="dark"] .stat-card {
+    background-color: var(--bs-card-bg) !important;
+}
+
+@media (max-width: 768px) {
+    .jdms-sidebar {
+        width: 100%;
+        min-height: auto;
+        position: relative;
+    }
+
+    .jdms-logo {
+        height: 44px;
+        max-width: 90px;
+    }
+
+    .jdms-company-name {
+        font-size: 0.85rem !important;
+    }
+
+    .jdms-header-user {
+        width: 100%;
+        justify-content: space-between;
+    }
+}

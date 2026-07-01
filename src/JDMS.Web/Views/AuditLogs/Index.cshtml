@@ -1,0 +1,4 @@
+@model IEnumerable<JDMS.Domain.Entities.AuditLog>
+@{ ViewData["Title"] = "سجل التدقيق"; }
+<table class="table jdms-table table-sm"><thead><tr><th>التاريخ</th><th>المستخدم</th><th>الإجراء</th><th>الكيان</th><th>التفاصيل</th></tr></thead>
+<tbody>@foreach(var l in Model){<tr><td>@l.ActionDate.ToString("yyyy-MM-dd HH:mm")</td><td>@l.UserName</td><td>@l.ActionType</td><td>@l.EntityName (@l.EntityId)</td><td><small>@l.NewValues</small></td></tr>}</tbody></table>

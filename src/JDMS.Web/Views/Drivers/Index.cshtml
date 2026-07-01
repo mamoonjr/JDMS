@@ -1,0 +1,6 @@
+@model IEnumerable<DriverDto>
+@{ ViewData["Title"] = "السائقين"; }
+<a asp-action="Create" class="btn btn-primary mb-3">إضافة سائق</a>
+<table class="table jdms-table"><thead><tr><th>الاسم</th><th>الهاتف</th><th>المركبة</th><th>المنطقة</th><th>التوصيلات</th><th>المكتملة</th><th></th></tr></thead>
+<tbody>@foreach(var d in Model){<tr><td>@d.DriverName</td><td>@d.PhoneNumber</td><td>@d.VehicleTypeName</td><td>@d.AssignedAreaName</td><td>@d.TotalDeliveries</td><td>@d.CompletedDeliveries</td>
+<td><a asp-action="Performance" asp-route-id="@d.Id" class="btn btn-sm btn-info">الأداء</a></td></tr>}</tbody></table>

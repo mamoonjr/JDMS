@@ -1,0 +1,229 @@
+@using JDMS.Application.DTOs
+@using JDMS.Domain.Enums
+@{
+    var stats = ViewBag.Stats as PosStatsDto ?? new PosStatsDto();
+    var products = ViewBag.InitialProducts as IReadOnlyList<PosProductDto> ?? Array.Empty<PosProductDto>();
+    var governorates = ViewBag.Governorates as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+    var drivers = ViewBag.Drivers as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+
+<link rel="stylesheet" href="~/css/pos.css" asp-append-version="true" />
+
+<div class="pos-page" id="posApp">
+    <div class="pos-toolbar d-flex flex-wrap align-items-center justify-content-between gap-2 mb-2">
+        <div>
+            <h5 class="mb-0 fw-bold">نقطة البيع — JDMS</h5>
+            <small class="text-muted">F2 حفظ · F3 طباعة · F4 طلب جديد · ESC إلغاء</small>
+        </div>
+        <div class="pos-stats d-flex flex-wrap gap-2">
+            <span class="pos-stat-badge">طلبات اليوم: <strong id="statOrders">@stats.OrdersToday</strong></span>
+            <span class="pos-stat-badge">إيراد اليوم: <strong id="statRevenue">@stats.RevenueToday.ToString("N2")</strong> د.أ</span>
+            <span class="pos-stat-badge">قيد التوصيل: <strong id="statPending">@stats.PendingDeliveries</strong></span>
+            <span class="pos-stat-badge">سائقون نشطون: <strong id="statDrivers">@stats.ActiveDrivers</strong></span>
+        </div>
+    </div>
+
+    <div class="row g-2 pos-layout">
+        <!-- يمين: العميل والعنوان -->
+        <div class="col-xl-3 col-lg-4">
+            <div class="pos-panel">
+                <div class="pos-panel-header">العميل والعنوان</div>
+                <div class="pos-panel-body">
+                    <input type="hidden" id="existingCustomerId" value="" />
+                    <div class="mb-2">
+                        <label class="form-label small">رقم الجوال</label>
+                        <input type="tel" class="form-control form-control-sm" id="phoneNumber" autocomplete="off" placeholder="07xxxxxxxx" />
+                        <div id="customerLookupHint" class="form-text small text-success d-none">تم العثور على عميل</div>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">اسم العميل</label>
+                        <input type="text" class="form-control form-control-sm" id="fullName" required />
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label small">جوال ثانوي</label>
+                        <input type="tel" class="form-control form-control-sm" id="secondaryPhone" />
+                    </div>
+                    <hr class="my-2" />
+                    <div class="row g-2">
+                        <div class="col-6">
+                            <label class="form-label small">المحافظة</label>
+                            <select class="form-select form-select-sm" id="governorateId">
+                                <option value="">—</option>
+                                @foreach (var g in governorates)
+                                {
+                                    <option value="@g.Id">@g.NameAr</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">المنطقة</label>
+                            <select class="form-select form-select-sm" id="areaId" disabled>
+                                <option value="">—</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">الحي</label>
+                            <input type="text" class="form-control form-control-sm" id="neighborhood" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">رقم المبنى</label>
+                            <input type="text" class="form-control form-control-sm" id="buildingNumber" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small">الشارع</label>
+                            <input type="text" class="form-control form-control-sm" id="street" />
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label small">ملاحظات التوصيل</label>
+                            <input type="text" class="form-control form-control-sm" id="deliveryNotes" placeholder="اترك عند الحارس..." />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">رسوم التوصيل</label>
+                            <input type="number" step="0.01" min="0" class="form-control form-control-sm" id="deliveryFee" value="0" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">السائق</label>
+                            <select class="form-select form-select-sm" id="assignedDriverId">
+                                <option value="">— اختياري —</option>
+                                @foreach (var d in drivers)
+                                {
+                                    <option value="@d.Id">@d.DriverName</option>
+                                }
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- وسط: المنتجات -->
+        <div class="col-xl-5 col-lg-5">
+            <div class="pos-panel pos-panel-products h-100">
+                <div class="pos-panel-header d-flex gap-2 align-items-center">
+                    <span>المنتجات</span>
+                    <input type="search" class="form-control form-control-sm flex-grow-1" id="productSearch"
+                           placeholder="بحث: اسم / باركود / SKU" autocomplete="off" />
+                </div>
+                <div class="pos-panel-body p-2">
+                    <div class="pos-product-grid" id="productGrid">
+                        @foreach (var p in products)
+                        {
+                            <button type="button" class="pos-product-card" data-id="@p.Id" data-name="@p.Name"
+                                    data-price="@p.UnitPrice" data-sku="@p.Sku" data-barcode="@(p.Barcode ?? "")">
+                                <img src="@p.ImageUrl" alt="" loading="lazy" onerror="this.src='/images/products/default.svg'" />
+                                <span class="pos-product-name">@p.Name</span>
+                                <span class="pos-product-price">@p.UnitPrice.ToString("N2") د.أ</span>
+                            </button>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- يسار: السلة والدفع -->
+        <div class="col-xl-4 col-lg-3">
+            <div class="pos-panel">
+                <div class="pos-panel-header">ملخص الطلب</div>
+                <div class="pos-panel-body p-0">
+                    <div class="table-responsive pos-cart-table-wrap">
+                        <table class="table table-sm table-hover mb-0 pos-cart-table" id="cartTable">
+                            <thead>
+                                <tr>
+                                    <th>المنتج</th>
+                                    <th class="text-center">كم</th>
+                                    <th>سعر</th>
+                                    <th>مجموع</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody id="cartBody"></tbody>
+                        </table>
+                    </div>
+                    <div class="pos-summary p-2">
+                        <div class="d-flex justify-content-between"><span>المجموع الفرعي</span><span id="sumSubtotal">0.00</span></div>
+                        <div class="d-flex justify-content-between"><span>التوصيل</span><span id="sumDelivery">0.00</span></div>
+                        <div class="d-flex justify-content-between align-items-center gap-2">
+                            <span>خصم</span>
+                            <input type="number" step="0.01" min="0" class="form-control form-control-sm w-50 text-end" id="discount" value="0" />
+                        </div>
+                        <div class="d-flex justify-content-between"><span>الضريبة (تقدير)</span><span id="sumTax">0.00</span></div>
+                        <div class="d-flex justify-content-between pos-grand-total"><span>الإجمالي</span><span id="sumGrand">0.00</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="pos-panel mt-2">
+                <div class="pos-panel-header">ملاحظات الطلب</div>
+                <div class="pos-panel-body">
+                    <textarea class="form-control" id="orderNotes" rows="3" maxlength="500"
+                              placeholder="اتصل بالعميل قبل التوصيل، التوصيل بعد 5 مساءً..."></textarea>
+                </div>
+            </div>
+
+            <div class="pos-panel mt-2">
+                <div class="pos-panel-header">الدفع والحالة</div>
+                <div class="pos-panel-body">
+                    <div class="row g-2 mb-2">
+                        <div class="col-6">
+                            <label class="form-label small">طريقة الدفع</label>
+                            <select class="form-select form-select-sm" id="paymentMethod">
+                                <option value="0">نقدي</option>
+                                <option value="1">بطاقة ائتمان</option>
+                                <option value="2">تحويل بنكي</option>
+                                <option value="3">دفع إلكتروني</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">حالة الطلب</label>
+                            <select class="form-select form-select-sm" id="orderStatus">
+                                <option value="0">جديد</option>
+                                <option value="1">قيد المعالجة</option>
+                                <option value="2">جاهز للتوصيل</option>
+                                <option value="3">خارج للتوصيل</option>
+                                <option value="4">تم التوصيل</option>
+                                <option value="5">ملغى</option>
+                                <option value="6">مرتجع</option>
+                            </select>
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">المبلغ المستلم</label>
+                            <input type="number" step="0.01" min="0" class="form-control form-control-sm" id="amountReceived" />
+                        </div>
+                        <div class="col-6">
+                            <label class="form-label small">الباقي</label>
+                            <input type="number" step="0.01" class="form-control form-control-sm" id="changeDue" readonly />
+                        </div>
+                    </div>
+                    <div class="d-grid gap-2 pos-actions">
+                        <button type="button" class="btn btn-primary" id="btnSave" title="F2">حفظ الطلب (F2)</button>
+                        <button type="button" class="btn btn-success" id="btnSavePrint" title="F3">حفظ وطباعة (F3)</button>
+                        <div class="btn-group">
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnPrintA4">A4</button>
+                            <button type="button" class="btn btn-outline-secondary btn-sm" id="btnPrintThermal">حراري</button>
+                        </div>
+                        <button type="button" class="btn btn-outline-primary" id="btnSaveNew" title="F4">حفظ وطلب جديد (F4)</button>
+                        <button type="button" class="btn btn-outline-danger" id="btnCancel" title="ESC">إلغاء (ESC)</button>
+                    </div>
+                    <div id="posAlert" class="alert alert-sm mt-2 d-none py-2 small" role="alert"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        window.posConfig = {
+            taxRate: 0.16,
+            lookupUrl: '@Url.Action("LookupCustomer", "Pos")',
+            areasUrl: '@Url.Action("GetAreas", "Pos")',
+            areaFeeUrl: '@Url.Action("AreaFee", "Pos")',
+            searchUrl: '@Url.Action("SearchProducts", "Pos")',
+            submitUrl: '@Url.Action("Submit", "Pos")',
+            statsUrl: '@Url.Action("Stats", "Pos")',
+            printUrl: '@Url.Action("Print", "Pos")',
+            printThermalUrl: '@Url.Action("Print", "Pos", new { thermal = true })'
+        };
+    </script>
+    <script src="~/js/pos.js" asp-append-version="true"></script>
+}

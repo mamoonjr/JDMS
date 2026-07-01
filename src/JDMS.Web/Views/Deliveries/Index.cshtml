@@ -1,0 +1,12 @@
+@model IEnumerable<DeliveryTrackingDto>
+@{ ViewData["Title"] = "تتبع التوصيل"; }
+<div class="card mb-3"><div class="card-body">
+<h6>تعيين طلب لسائق</h6>
+<form asp-action="Assign" method="post" class="row g-2">@Html.AntiForgeryToken()
+<div class="col-md-3"><select name="OrderId" class="form-select" required>@foreach(dynamic o in ViewBag.Orders){<option value="@o.Id">@o.OrderNumber</option>}</select></div>
+<div class="col-md-3"><select name="DriverId" class="form-select" required>@foreach(dynamic d in ViewBag.Drivers){<option value="@d.Id">@d.DriverName</option>}</select></div>
+<div class="col-md-4"><input name="DeliveryNotes" class="form-control" placeholder="ملاحظات"/></div>
+<div class="col-md-2"><button class="btn btn-primary">تعيين</button></div></form></div></div>
+<table class="table jdms-table"><thead><tr><th>الطلب</th><th>السائق</th><th>تاريخ التعيين</th><th>الحالة</th><th></th></tr></thead>
+<tbody>@foreach(var t in Model){<tr><td>@t.OrderNumber</td><td>@t.DriverName</td><td>@t.AssignDate.ToString("yyyy-MM-dd")</td><td>@t.StatusName</td>
+<td><form asp-action="UpdateStatus" method="post">@Html.AntiForgeryToken()<input type="hidden" name="id" value="@t.Id"/><input type="hidden" name="status" value="3"/><button class="btn btn-sm btn-success">تم التسليم</button></form></td></tr>}</tbody></table>

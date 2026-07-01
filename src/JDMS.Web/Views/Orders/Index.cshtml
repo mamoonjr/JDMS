@@ -1,0 +1,8 @@
+@model IEnumerable<OrderListDto>
+@{ ViewData["Title"] = "الطلبات"; }
+<div class="mb-3 d-flex justify-content-between">
+<form method="get" class="d-flex gap-2"><input name="search" value="@ViewBag.Search" class="form-control"/><button class="btn btn-secondary">بحث</button></form>
+<a asp-action="Create" class="btn btn-primary">طلب جديد</a></div>
+<table class="table table-striped jdms-table"><thead><tr><th>رقم الطلب</th><th>العميل</th><th>التاريخ</th><th>الحالة</th><th>الإجمالي</th><th></th></tr></thead>
+<tbody>@foreach(var o in Model){<tr><td>@o.OrderNumber</td><td>@o.CustomerName</td><td>@o.OrderDate.ToString("yyyy-MM-dd")</td><td>@o.StatusName</td><td>@o.GrandTotal.ToString("N2")</td>
+<td><a asp-action="Details" asp-route-id="@o.Id" class="btn btn-sm btn-info">تفاصيل</a></td></tr>}</tbody></table>

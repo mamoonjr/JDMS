@@ -1,0 +1,14 @@
+## .NET
+bin/
+obj/
+publish/
+*.user
+*.suo
+.vs/
+appsettings.*.local.json
+
+## Database
+*.db
+
+## Logs
+logs/

@@ -1,0 +1,9 @@
+@model DriverCreateDto
+@{ ViewData["Title"] = "إضافة سائق"; }
+<form method="post">@Html.AntiForgeryToken()
+<div class="row g-3">
+<div class="col-md-6"><label>الاسم</label><input asp-for="DriverName" class="form-control" required/></div>
+<div class="col-md-6"><label>الهاتف</label><input asp-for="PhoneNumber" class="form-control" required/></div>
+<div class="col-md-6"><label>نوع المركبة</label><select asp-for="VehicleType" class="form-select"><option value="0">دراجة نارية</option><option value="1">سيارة</option><option value="2">فان</option><option value="3">شاحنة</option></select></div>
+<div class="col-md-6"><label>المنطقة</label><select asp-for="AssignedAreaId" class="form-select"><option value="">--</option>@foreach(dynamic a in ViewBag.Areas){<option value="@a.Id">@a.NameAr</option>}</select></div>
+</div><button class="btn btn-primary mt-3">حفظ</button></form>

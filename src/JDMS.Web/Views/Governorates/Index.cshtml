@@ -1,0 +1,16 @@
+@model IEnumerable<JDMS.Domain.Entities.Governorate>
+@{ ViewData["Title"] = "المحافظات والمناطق"; }
+@foreach(var g in Model){
+<div class="card mb-3"><div class="card-header d-flex justify-content-between"><strong>@g.NameAr</strong><span class="badge bg-secondary">@g.Areas.Count منطقة</span></div>
+<div class="card-body">
+<table class="table table-sm"><thead><tr><th>المنطقة</th><th>رسوم التوصيل</th><th></th></tr></thead>
+<tbody>@foreach(var a in g.Areas){<tr><td>@a.NameAr</td><td>
+<form asp-action="UpdateAreaFee" method="post" class="d-flex gap-2">@Html.AntiForgeryToken()
+<input type="hidden" name="areaId" value="@a.Id"/><input type="number" name="deliveryFee" value="@a.DeliveryFee" step="0.01" class="form-control form-control-sm w-auto"/>
+<button class="btn btn-sm btn-primary">حفظ</button></form></td></tr>}</tbody></table>
+<form asp-action="CreateArea" method="post" class="row g-2">@Html.AntiForgeryToken()
+<input type="hidden" name="governorateId" value="@g.Id"/>
+<div class="col-md-4"><input name="nameAr" class="form-control" placeholder="اسم المنطقة" required/></div>
+<div class="col-md-3"><input name="deliveryFee" type="number" step="0.01" class="form-control" placeholder="الرسوم" required/></div>
+<div class="col-md-2"><button class="btn btn-success btn-sm">إضافة منطقة</button></div></form>
+</div></div>}

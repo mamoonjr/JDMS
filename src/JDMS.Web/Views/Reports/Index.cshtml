@@ -1,0 +1,14 @@
+@model ReportFilterDto
+@{ ViewData["Title"] = "التقارير"; }
+<form method="post" asp-action="ViewReport" class="card p-3 mb-3">@Html.AntiForgeryToken()
+<div class="row g-3">
+<div class="col-md-3"><label>نوع التقرير</label><select asp-for="ReportType" class="form-select"><option value="orders">الطلبات</option><option value="revenue">الإيرادات</option><option value="customers">العملاء</option><option value="drivers">السائقين</option><option value="delivery">التوصيل</option></select></div>
+<div class="col-md-3"><label>من تاريخ</label><input asp-for="DateFrom" type="date" class="form-control"/></div>
+<div class="col-md-3"><label>إلى تاريخ</label><input asp-for="DateTo" type="date" class="form-control"/></div>
+<div class="col-md-3"><label>المحافظة</label><select asp-for="GovernorateId" class="form-select"><option value="">الكل</option>@foreach(dynamic g in ViewBag.Governorates){<option value="@g.Id">@g.NameAr</option>}</select></div>
+<div class="col-md-3"><label>السائق</label><select asp-for="DriverId" class="form-select"><option value="">الكل</option>@foreach(dynamic d in ViewBag.Drivers){<option value="@d.Id">@d.DriverName</option>}</select></div>
+<div class="col-md-3"><label>حالة الطلب</label><select asp-for="OrderStatus" class="form-select"><option value="">الكل</option><option value="4">تم التسليم</option><option value="5">ملغي</option></select></div>
+</div>
+<button type="submit" class="btn btn-primary mt-3">عرض التقرير</button>
+</form>
+<form method="post" asp-action="ExportExcel" class="d-inline">@Html.AntiForgeryToken()<input type="hidden" asp-for="ReportType"/><input type="hidden" asp-for="DateFrom"/><input type="hidden" asp-for="DateTo"/><button class="btn btn-success">تصدير Excel</button></form>

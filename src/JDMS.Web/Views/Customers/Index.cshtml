@@ -1,0 +1,31 @@
+@model IEnumerable<CustomerDto>
+@{ ViewData["Title"] = "إدارة العملاء"; }
+<div class="d-flex justify-content-between mb-3">
+    <form method="get" class="d-flex gap-2">
+        <input type="text" name="search" value="@ViewBag.Search" class="form-control" placeholder="بحث..." />
+        <button type="submit" class="btn btn-secondary">بحث</button>
+    </form>
+    <div>
+        <a asp-action="Export" class="btn btn-outline-success">تصدير Excel</a>
+        <a asp-action="Create" class="btn btn-primary">إضافة عميل</a>
+    </div>
+</div>
+<table class="table table-striped jdms-table">
+    <thead><tr><th>الرمز</th><th>الاسم</th><th>الجوال</th><th>البريد</th><th>تاريخ الإنشاء</th><th></th></tr></thead>
+    <tbody>
+    @foreach (var c in Model)
+    {
+        <tr>
+            <td>@c.CustomerCode</td><td>@c.FullName</td><td>@c.MobileNumber</td><td>@c.Email</td>
+            <td>@c.CreatedAt.ToString("yyyy-MM-dd")</td>
+            <td>
+                <a asp-action="Edit" asp-route-id="@c.Id" class="btn btn-sm btn-warning">تعديل</a>
+                <form asp-action="Delete" method="post" class="d-inline" onsubmit="return confirm('حذف؟');">
+                    @Html.AntiForgeryToken()<input type="hidden" name="id" value="@c.Id" />
+                    <button class="btn btn-sm btn-danger">حذف</button>
+                </form>
+            </td>
+        </tr>
+    }
+    </tbody>
+</table>

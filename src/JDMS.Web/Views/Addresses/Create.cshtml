@@ -1,0 +1,16 @@
+@model AddressCreateDto
+@{ ViewData["Title"] = "إضافة عنوان"; }
+<form method="post" id="addrForm">@Html.AntiForgeryToken()
+<div class="row g-3">
+<div class="col-md-4"><label>العميل</label><select asp-for="CustomerId" class="form-select" required>@foreach(dynamic c in ViewBag.Customers){<option value="@c.Id">@c.FullName</option>}</select></div>
+<div class="col-md-4"><label>المحافظة</label><select asp-for="GovernorateId" id="govId" class="form-select" required>@foreach(dynamic g in ViewBag.Governorates){<option value="@g.Id">@g.NameAr</option>}</select></div>
+<div class="col-md-4"><label>المنطقة</label><select asp-for="AreaId" id="areaId" class="form-select" required></select></div>
+<div class="col-md-4"><label>الحي</label><input asp-for="Neighborhood" class="form-control" required/></div>
+<div class="col-md-4"><label>الشارع</label><input asp-for="Street" class="form-control"/></div>
+<div class="col-md-3"><label>المبنى</label><input asp-for="Building" class="form-control"/></div>
+<div class="col-md-3"><label>الشقة</label><input asp-for="Apartment" class="form-control"/></div>
+<div class="col-md-4"><label>خط العرض</label><input asp-for="Latitude" type="number" step="any" class="form-control"/></div>
+<div class="col-md-4"><label>خط الطول</label><input asp-for="Longitude" type="number" step="any" class="form-control"/></div>
+<div class="col-md-4"><label>رابط خرائط Google</label><input asp-for="GoogleMapsLink" class="form-control"/></div>
+</div><button class="btn btn-primary mt-3">حفظ</button></form>
+@section Scripts{<script>$('#govId').on('change',function(){loadAreas($(this).val(),$('#areaId'));});$('#govId').trigger('change');</script>}

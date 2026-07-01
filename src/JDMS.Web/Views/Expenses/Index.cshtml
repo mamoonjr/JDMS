@@ -1,0 +1,123 @@
+@model ExpenseIndexViewModel
+@{
+    ViewData["Title"] = "المصاريف";
+    var f = Model.Filter;
+}
+
+<div class="mb-3 d-flex flex-wrap justify-content-between align-items-center gap-2">
+    <h5 class="mb-0">إدارة المصاريف</h5>
+    <a asp-action="Create" class="btn btn-primary">+ إضافة مصروف</a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h6>إجمالي المصاريف</h6>
+                <h3 class="text-danger">@Model.Stats.TotalAmount.ToString("N2") <small class="fs-6">د.أ</small></h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h6>عدد المصاريف</h6>
+                <h3>@Model.Stats.ExpenseCount</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card border-0 shadow-sm h-100">
+            <div class="card-body">
+                <h6>متوسط المصروف</h6>
+                <h3>@Model.Stats.AverageAmount.ToString("N2") <small class="fs-6">د.أ</small></h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<form method="get" class="card mb-3">
+    <div class="card-body">
+        <div class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small">من تاريخ</label>
+                <input type="date" name="dateFrom" value="@f.DateFrom?.ToString("yyyy-MM-dd")" class="form-control" />
+            </div>
+            <div class="col-md-3">
+                <label class="form-label small">إلى تاريخ</label>
+                <input type="date" name="dateTo" value="@f.DateTo?.ToString("yyyy-MM-dd")" class="form-control" />
+            </div>
+            <div class="col-md-4">
+                <label class="form-label small">بحث بالاسم</label>
+                <input type="text" name="search" value="@f.Search" class="form-control" placeholder="اسم المصروف..." />
+            </div>
+            <div class="col-md-2">
+                <button type="submit" class="btn btn-secondary w-100">تصفية</button>
+            </div>
+        </div>
+    </div>
+</form>
+
+@if (Model.Stats.ByItem.Count > 0)
+{
+    <div class="card mb-3">
+        <div class="card-header">أعلى المصاريف حسب البند</div>
+        <div class="card-body p-0">
+            <table class="table table-sm mb-0">
+                <thead>
+                    <tr><th>البند</th><th>العدد</th><th>الإجمالي</th></tr>
+                </thead>
+                <tbody>
+                    @foreach (var item in Model.Stats.ByItem)
+                    {
+                        <tr>
+                            <td>@item.ItemName</td>
+                            <td>@item.Count</td>
+                            <td>@item.TotalAmount.ToString("N2") د.أ</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+}
+
+<table class="table table-striped jdms-table">
+    <thead>
+        <tr>
+            <th>اسم المصروف</th>
+            <th>السعر</th>
+            <th>تاريخ البداية</th>
+            <th>تاريخ النهاية</th>
+            <th>ملاحظات</th>
+            <th></th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (!Model.Expenses.Any())
+        {
+            <tr><td colspan="6" class="text-center text-muted">لا توجد مصاريف في الفترة المحددة</td></tr>
+        }
+        @foreach (var e in Model.Expenses)
+        {
+            <tr>
+                <td>@e.ItemName</td>
+                <td>@e.Amount.ToString("N2") د.أ</td>
+                <td>@e.StartDate.ToString("yyyy-MM-dd")</td>
+                <td>@(e.EndDate?.ToString("yyyy-MM-dd") ?? "—")</td>
+                <td class="text-truncate" style="max-width:180px">@(e.Notes ?? "—")</td>
+                <td class="text-nowrap">
+                    <a asp-action="Edit" asp-route-id="@e.Id" class="btn btn-sm btn-warning">تعديل</a>
+                    @if (User.IsInRole(Roles.Administrator) || User.IsInRole(Roles.Manager))
+                    {
+                        <form asp-action="Delete" method="post" class="d-inline">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="id" value="@e.Id" />
+                            <button type="submit" class="btn btn-sm btn-danger" onclick="return confirm('حذف هذا المصروف؟')">حذف</button>
+                        </form>
+                    }
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

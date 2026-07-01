@@ -1,0 +1,42 @@
+@model OrderCreateDto
+@{ ViewData["Title"] = "طلب جديد"; var customers = ViewBag.Customers; var products = ViewBag.Products; var addresses = ViewBag.Addresses; }
+<form method="post" id="orderForm">@Html.AntiForgeryToken()
+<div class="row g-3 mb-3">
+<div class="col-md-4"><label>العميل</label><select asp-for="CustomerId" class="form-select" id="customerId" required>@foreach(dynamic c in customers){<option value="@c.Id">@c.FullName</option>}</select></div>
+<div class="col-md-4"><label>العنوان</label><select asp-for="AddressId" class="form-select" id="addressId" required></select></div>
+<div class="col-md-4"><label>تاريخ التوصيل</label><input asp-for="DeliveryDate" type="date" class="form-control"/></div>
+<div class="col-md-4"><label>رسوم التوصيل (د.أ)</label><input asp-for="DeliveryFee" type="number" step="0.01" min="0" class="form-control" id="deliveryFee" value="0"/></div>
+<div class="col-md-4"><label>خصم الطلب</label><input asp-for="OrderDiscount" type="number" step="0.01" class="form-control" value="0"/></div>
+<div class="col-12">
+    <label asp-for="Notes" class="form-label">ملاحظات الطلب</label>
+    <textarea asp-for="Notes" class="form-control" rows="3" maxlength="500"
+              placeholder="أدخل تعليمات خاصة للتوصيل (مثل: الاتصال قبل التوصيل، التسليم بعد الساعة 5 مساءً)"></textarea>
+    <span asp-validation-for="Notes" class="text-danger"></span>
+</div>
+</div>
+<h5>تفاصيل الطلب</h5>
+<table class="table" id="linesTable"><thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>خصم</th><th></th></tr></thead>
+<tbody>
+@for(var i=0;i<Model.Details.Count;i++){
+<tr class="line-row"><td><select name="Details[@i].ProductId" class="form-select product-select">@foreach(dynamic p in products){<option value="@p.Id" data-price="@p.UnitPrice">@p.ProductName</option>}</select></td>
+<td><input name="Details[@i].Quantity" type="number" min="1" value="1" class="form-control qty"/></td>
+<td><input name="Details[@i].UnitPrice" type="number" step="0.01" class="form-control price"/></td>
+<td><input name="Details[@i].Discount" type="number" step="0.01" value="0" class="form-control"/></td>
+<td><button type="button" class="btn btn-sm btn-danger remove-line">×</button></td></tr>}
+</tbody></table>
+<button type="button" class="btn btn-outline-primary" id="addLine">+ سطر</button>
+<button type="submit" class="btn btn-primary">حفظ الطلب</button>
+</form>
+@section Scripts{
+<partial name="_ValidationScriptsPartial" />
+<script>
+const addresses = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(addresses));
+function filterAddresses(){const cid=$('#customerId').val();const sel=$('#addressId').empty();addresses.filter(a=>a.customerId==cid).forEach(a=>sel.append($('<option>',{value:a.id,text:a.label}))); }
+$('#customerId').on('change',filterAddresses);
+filterAddresses();
+let lineIndex=@Model.Details.Count;
+$('#addLine').click(function(){const row=$('.line-row:first').clone();row.find('input,select').each(function(){const n=$(this).attr('name');if(n)$(this).attr('name',n.replace(/\[\d+\]/,'['+lineIndex+']'));});row.find('input').val('');row.find('.qty').val(1);$('#linesTable tbody').append(row);lineIndex++;});
+$(document).on('click','.remove-line',function(){if($('.line-row').length>1)$(this).closest('tr').remove();});
+$(document).on('change','.product-select',function(){const price=$(this).find(':selected').data('price');$(this).closest('tr').find('.price').val(price);});
+$('.product-select').trigger('change');
+</script>}
