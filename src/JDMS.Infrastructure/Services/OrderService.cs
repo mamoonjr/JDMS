@@ -1,3 +1,4 @@
+using ClosedXML.Excel;
 using JDMS.Application.DTOs;
 using JDMS.Application.Interfaces;
 using JDMS.Domain.Entities;
@@ -38,39 +39,168 @@ public class OrderService : IOrderService
     }
 
     public async Task<IReadOnlyList<OrderListDto>> GetAllAsync(string? search = null, CancellationToken cancellationToken = default)
+        => await GetFilteredAsync(new OrderFilterDto { Search = search }, cancellationToken);
+
+    public async Task<IReadOnlyList<OrderListDto>> GetFilteredAsync(OrderFilterDto filter, CancellationToken cancellationToken = default)
+    {
+        var orders = await BuildFilteredQuery(filter)
+            .OrderByDescending(o => o.OrderDate)
+            .ToListAsync(cancellationToken);
+
+        return orders.Select(MapToListDto).ToList();
+    }
+
+    public async Task<byte[]> ExportExcelAsync(OrderFilterDto filter, CancellationToken cancellationToken = default)
+    {
+        var orders = await BuildFilteredQuery(filter)
+            .OrderByDescending(o => o.OrderDate)
+            .ToListAsync(cancellationToken);
+
+        using var workbook = new XLWorkbook();
+
+        var summary = workbook.Worksheets.Add("ملخص الطلبات");
+        var summaryHeaders = new[]
+        {
+            "رقم الطلب", "العميل", "الجوال", "تاريخ الطلب", "تاريخ التوصيل", "الحالة", "طريقة الدفع",
+            "العنوان", "ملخص المنتجات", "عدد الأصناف", "المجموع الفرعي", "التوصيل", "الخصم", "الضريبة", "الإجمالي", "ملاحظات"
+        };
+        for (var c = 0; c < summaryHeaders.Length; c++)
+            summary.Cell(1, c + 1).Value = summaryHeaders[c];
+
+        var summaryHeaderRow = summary.Range(1, 1, 1, summaryHeaders.Length);
+        summaryHeaderRow.Style.Font.Bold = true;
+        summaryHeaderRow.Style.Fill.BackgroundColor = XLColor.LightGray;
+
+        for (var i = 0; i < orders.Count; i++)
+        {
+            var o = orders[i];
+            var dto = MapToListDto(o);
+            var row = i + 2;
+            summary.Cell(row, 1).Value = dto.OrderNumber;
+            summary.Cell(row, 2).Value = dto.CustomerName;
+            summary.Cell(row, 3).Value = dto.CustomerPhone ?? "";
+            summary.Cell(row, 4).Value = dto.OrderDate.ToString("yyyy-MM-dd HH:mm");
+            summary.Cell(row, 5).Value = dto.DeliveryDate?.ToString("yyyy-MM-dd HH:mm") ?? "";
+            summary.Cell(row, 6).Value = dto.StatusName;
+            summary.Cell(row, 7).Value = dto.PaymentMethodName ?? "";
+            summary.Cell(row, 8).Value = dto.AddressSummary ?? "";
+            summary.Cell(row, 9).Value = dto.ProductsSummary ?? "";
+            summary.Cell(row, 10).Value = dto.ItemCount;
+            summary.Cell(row, 11).Value = dto.Subtotal;
+            summary.Cell(row, 12).Value = dto.DeliveryFee;
+            summary.Cell(row, 13).Value = dto.Discount;
+            summary.Cell(row, 14).Value = dto.Tax;
+            summary.Cell(row, 15).Value = dto.GrandTotal;
+            summary.Cell(row, 16).Value = dto.Notes ?? "";
+        }
+        summary.Columns().AdjustToContents();
+
+        var lines = workbook.Worksheets.Add("تفاصيل المنتجات");
+        var lineHeaders = new[] { "رقم الطلب", "العميل", "المنتج", "الكمية", "السعر", "خصم", "إجمالي السطر", "حالة الطلب" };
+        for (var c = 0; c < lineHeaders.Length; c++)
+            lines.Cell(1, c + 1).Value = lineHeaders[c];
+
+        var linesHeaderRow = lines.Range(1, 1, 1, lineHeaders.Length);
+        linesHeaderRow.Style.Font.Bold = true;
+        linesHeaderRow.Style.Fill.BackgroundColor = XLColor.LightGray;
+
+        var lineRow = 2;
+        foreach (var order in orders)
+        {
+            var statusName = GetStatusName(order.Status);
+            foreach (var detail in order.OrderDetails.OrderBy(d => d.Id))
+            {
+                lines.Cell(lineRow, 1).Value = order.OrderNumber;
+                lines.Cell(lineRow, 2).Value = order.Customer.FullName;
+                lines.Cell(lineRow, 3).Value = detail.Product.ProductName;
+                lines.Cell(lineRow, 4).Value = detail.Quantity;
+                lines.Cell(lineRow, 5).Value = detail.UnitPrice;
+                lines.Cell(lineRow, 6).Value = detail.Discount;
+                lines.Cell(lineRow, 7).Value = detail.LineTotal;
+                lines.Cell(lineRow, 8).Value = statusName;
+                lineRow++;
+            }
+        }
+        lines.Columns().AdjustToContents();
+
+        using var stream = new MemoryStream();
+        workbook.SaveAs(stream);
+        return stream.ToArray();
+    }
+
+    private IQueryable<Order> BuildFilteredQuery(OrderFilterDto filter)
     {
         var query = _unitOfWork.Orders.Query()
             .Include(o => o.Customer)
+            .Include(o => o.Address).ThenInclude(a => a.Governorate)
+            .Include(o => o.Address).ThenInclude(a => a.Area)
+            .Include(o => o.OrderDetails).ThenInclude(d => d.Product)
             .AsNoTracking();
 
-        if (!string.IsNullOrWhiteSpace(search))
-            query = query.Where(o => o.OrderNumber.Contains(search) || o.Customer.FullName.Contains(search));
+        if (!string.IsNullOrWhiteSpace(filter.Search))
+        {
+            var term = filter.Search.Trim();
+            query = query.Where(o =>
+                o.OrderNumber.Contains(term) ||
+                o.Customer.FullName.Contains(term) ||
+                o.Customer.MobileNumber.Contains(term));
+        }
 
-        var rows = await query.OrderByDescending(o => o.OrderDate)
-            .Select(o => new
-            {
-                o.Id,
-                o.OrderNumber,
-                CustomerName = o.Customer.FullName,
-                o.OrderDate,
-                o.DeliveryDate,
-                Status = (int)o.Status,
-                o.GrandTotal
-            })
-            .ToListAsync(cancellationToken);
+        if (filter.Status.HasValue)
+            query = query.Where(o => (int)o.Status == filter.Status.Value);
 
-        return rows.Select(o => new OrderListDto
+        if (filter.DateFrom.HasValue)
+            query = query.Where(o => o.OrderDate >= filter.DateFrom.Value);
+
+        if (filter.DateTo.HasValue)
+            query = query.Where(o => o.OrderDate < filter.DateTo.Value.Date.AddDays(1));
+
+        return query;
+    }
+
+    private OrderListDto MapToListDto(Order o)
+    {
+        var products = o.OrderDetails
+            .OrderBy(d => d.Id)
+            .Select(d => $"{d.Product.ProductName} ×{d.Quantity}")
+            .ToList();
+
+        var addressParts = new List<string>();
+        if (o.Address.Governorate != null) addressParts.Add(o.Address.Governorate.NameAr);
+        if (o.Address.Area != null) addressParts.Add(o.Address.Area.NameAr);
+        if (!string.IsNullOrWhiteSpace(o.Address.Neighborhood)) addressParts.Add(o.Address.Neighborhood);
+        if (!string.IsNullOrWhiteSpace(o.Address.Building)) addressParts.Add(o.Address.Building);
+
+        return new OrderListDto
         {
             Id = o.Id,
             OrderNumber = o.OrderNumber,
-            CustomerName = o.CustomerName,
+            CustomerName = o.Customer.FullName,
+            CustomerPhone = o.Customer.MobileNumber,
             OrderDate = o.OrderDate,
             DeliveryDate = o.DeliveryDate,
-            Status = o.Status,
-            StatusName = GetStatusName((OrderStatus)o.Status),
-            GrandTotal = o.GrandTotal
-        }).ToList();
+            Status = (int)o.Status,
+            StatusName = GetStatusName(o.Status),
+            PaymentMethodName = GetPaymentMethodName(o.PaymentMethod),
+            AddressSummary = addressParts.Count > 0 ? string.Join(" - ", addressParts) : null,
+            ProductsSummary = products.Count > 0 ? string.Join("، ", products) : null,
+            ItemCount = o.OrderDetails.Sum(d => d.Quantity),
+            Subtotal = o.Subtotal,
+            DeliveryFee = o.DeliveryFee,
+            Discount = o.Discount,
+            Tax = o.Tax,
+            GrandTotal = o.GrandTotal,
+            Notes = o.Notes
+        };
     }
+
+    private static string GetPaymentMethodName(PaymentMethod method) => method switch
+    {
+        PaymentMethod.CreditCard => "بطاقة ائتمان",
+        PaymentMethod.BankTransfer => "تحويل بنكي",
+        PaymentMethod.OnlinePayment => "دفع إلكتروني",
+        _ => "نقدي"
+    };
 
     private static string GetStatusName(OrderStatus status) =>
         StatusNames.GetValueOrDefault(status, status.ToString());
@@ -98,6 +228,7 @@ public class OrderService : IOrderService
             OrderDate = order.OrderDate,
             DeliveryDate = order.DeliveryDate,
             Status = (int)order.Status,
+            StatusName = GetStatusName(order.Status),
             Notes = order.Notes,
             Subtotal = order.Subtotal,
             DeliveryFee = order.DeliveryFee,

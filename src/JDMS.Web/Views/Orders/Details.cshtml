@@ -1,27 +1,114 @@
 @model OrderDto
-@{ ViewData["Title"] = "تفاصيل الطلب"; }
-<div class="card mb-3"><div class="card-body">
-<p><strong>رقم الطلب:</strong> @Model.OrderNumber | <strong>العميل:</strong> @Model.CustomerName</p>
-<p><strong>العنوان:</strong> @Model.AddressSummary | <strong>التاريخ:</strong> @Model.OrderDate.ToString("yyyy-MM-dd")</p>
-<p><strong>الإجمالي:</strong> @Model.GrandTotal.ToString("N2") د.أ (فرعي: @Model.Subtotal | توصيل: @Model.DeliveryFee | خصم: @Model.Discount | ضريبة: @Model.Tax)</p>
-@if (!string.IsNullOrWhiteSpace(Model.Notes))
-{
-    <div class="alert alert-light border mt-2 mb-0">
-        <strong>ملاحظات الطلب:</strong>
-        <div class="mt-1">@Model.Notes</div>
-    </div>
+@using JDMS.Domain.Enums
+@{
+    ViewData["Title"] = "تفاصيل الطلب";
+    var statusName = Model.StatusName;
+    string statusBadge = Model.Status switch
+    {
+        (int)OrderStatus.New => "bg-primary",
+        (int)OrderStatus.Processing => "bg-info text-dark",
+        (int)OrderStatus.ReadyForDelivery => "bg-secondary",
+        (int)OrderStatus.OutForDelivery => "bg-warning text-dark",
+        (int)OrderStatus.Delivered => "bg-success",
+        (int)OrderStatus.Cancelled => "bg-danger",
+        (int)OrderStatus.Returned => "bg-dark",
+        _ => "bg-light text-dark"
+    };
 }
-<form asp-action="UpdateStatus" method="post" class="d-flex gap-2 align-items-center">@Html.AntiForgeryToken()
-<input type="hidden" name="id" value="@Model.Id"/>
-<select name="status" class="form-select w-auto"><option value="0">جديد</option><option value="1">قيد المعالجة</option><option value="2">جاهز للتوصيل</option><option value="3">قيد التوصيل</option><option value="4">تم التسليم</option><option value="5">ملغي</option><option value="6">مرتجع</option></select>
-<button class="btn btn-warning btn-sm">تحديث الحالة</button></form>
-</div></div>
-<table class="table"><thead><tr><th>المنتج</th><th>الكمية</th><th>السعر</th><th>الخصم</th><th>الإجمالي</th></tr></thead>
-<tbody>@foreach(var d in Model.Details){<tr><td>@d.ProductName</td><td>@d.Quantity</td><td>@d.UnitPrice.ToString("N2")</td><td>@d.Discount.ToString("N2")</td><td>@d.LineTotal.ToString("N2")</td></tr>}</tbody></table>
-<div class="d-flex gap-2">
-<a asp-controller="Invoices" asp-action="Print" asp-route-orderId="@Model.Id" class="btn btn-success" target="_blank">طباعة A4</a>
-<a asp-controller="Invoices" asp-action="PrintThermal" asp-route-orderId="@Model.Id" class="btn btn-outline-success" target="_blank">إيصال حراري</a>
-<a asp-controller="Invoices" asp-action="Download" asp-route-orderId="@Model.Id" class="btn btn-outline-secondary">تحميل PDF</a>
-<a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">تعديل</a>
-<a asp-action="Index" class="btn btn-secondary">رجوع</a>
+
+<div class="d-flex flex-wrap justify-content-between align-items-start gap-2 mb-3">
+    <div>
+        <h5 class="mb-1">@Model.OrderNumber</h5>
+        <span class="badge @statusBadge">@statusName</span>
+    </div>
+    <a asp-action="Index" class="btn btn-outline-secondary btn-sm">← رجوع للطلبات</a>
+</div>
+
+<div class="row g-3">
+    <div class="col-lg-5">
+        <div class="card h-100">
+            <div class="card-header">بيانات الطلب</div>
+            <div class="card-body">
+                <dl class="row mb-0 small">
+                    <dt class="col-sm-4">العميل</dt>
+                    <dd class="col-sm-8">@Model.CustomerName</dd>
+                    <dt class="col-sm-4">العنوان</dt>
+                    <dd class="col-sm-8">@Model.AddressSummary</dd>
+                    <dt class="col-sm-4">تاريخ الطلب</dt>
+                    <dd class="col-sm-8">@Model.OrderDate.ToLocalTime().ToString("yyyy-MM-dd HH:mm")</dd>
+                    <dt class="col-sm-4">تاريخ التوصيل</dt>
+                    <dd class="col-sm-8">@(Model.DeliveryDate?.ToLocalTime().ToString("yyyy-MM-dd HH:mm") ?? "—")</dd>
+                </dl>
+                @if (!string.IsNullOrWhiteSpace(Model.Notes))
+                {
+                    <div class="alert alert-light border mt-3 mb-0 small">
+                        <strong>ملاحظات:</strong> @Model.Notes
+                    </div>
+                }
+                <form asp-action="UpdateStatus" method="post" class="d-flex flex-wrap gap-2 align-items-center mt-3">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="id" value="@Model.Id" />
+                    <select name="status" class="form-select form-select-sm w-auto">
+                        <option value="0" selected="@(Model.Status == 0)">جديد</option>
+                        <option value="1" selected="@(Model.Status == 1)">قيد المعالجة</option>
+                        <option value="2" selected="@(Model.Status == 2)">جاهز للتوصيل</option>
+                        <option value="3" selected="@(Model.Status == 3)">قيد التوصيل</option>
+                        <option value="4" selected="@(Model.Status == 4)">تم التسليم</option>
+                        <option value="5" selected="@(Model.Status == 5)">ملغي</option>
+                        <option value="6" selected="@(Model.Status == 6)">مرتجع</option>
+                    </select>
+                    <button class="btn btn-warning btn-sm">تحديث الحالة</button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-7">
+        <div class="card h-100">
+            <div class="card-header">الملخص المالي</div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between"><span>المجموع الفرعي</span><span>@Model.Subtotal.ToString("N2") د.أ</span></div>
+                <div class="d-flex justify-content-between"><span>التوصيل</span><span>@Model.DeliveryFee.ToString("N2") د.أ</span></div>
+                <div class="d-flex justify-content-between"><span>الخصم</span><span>@Model.Discount.ToString("N2") د.أ</span></div>
+                <div class="d-flex justify-content-between"><span>الضريبة</span><span>@Model.Tax.ToString("N2") د.أ</span></div>
+                <hr />
+                <div class="d-flex justify-content-between fw-bold fs-5"><span>الإجمالي</span><span>@Model.GrandTotal.ToString("N2") د.أ</span></div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header">منتجات الطلب</div>
+    <div class="table-responsive">
+        <table class="table table-striped mb-0">
+            <thead>
+                <tr>
+                    <th>المنتج</th>
+                    <th class="text-center">الكمية</th>
+                    <th class="text-end">السعر</th>
+                    <th class="text-end">الخصم</th>
+                    <th class="text-end">الإجمالي</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var d in Model.Details)
+                {
+                    <tr>
+                        <td>@d.ProductName</td>
+                        <td class="text-center">@d.Quantity</td>
+                        <td class="text-end">@d.UnitPrice.ToString("N2")</td>
+                        <td class="text-end">@d.Discount.ToString("N2")</td>
+                        <td class="text-end fw-semibold">@d.LineTotal.ToString("N2")</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="d-flex flex-wrap gap-2 mt-3">
+    <a asp-controller="Invoices" asp-action="Print" asp-route-orderId="@Model.Id" class="btn btn-success" target="_blank">طباعة A4</a>
+    <a asp-controller="Invoices" asp-action="PrintThermal" asp-route-orderId="@Model.Id" class="btn btn-outline-success" target="_blank">إيصال حراري</a>
+    <a asp-controller="Invoices" asp-action="Download" asp-route-orderId="@Model.Id" class="btn btn-outline-secondary">تحميل PDF</a>
+    <a asp-action="Edit" asp-route-id="@Model.Id" class="btn btn-primary">تعديل</a>
 </div>

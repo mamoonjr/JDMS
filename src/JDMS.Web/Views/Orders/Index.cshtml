@@ -1,8 +1,130 @@
 @model IEnumerable<OrderListDto>
-@{ ViewData["Title"] = "الطلبات"; }
-<div class="mb-3 d-flex justify-content-between">
-<form method="get" class="d-flex gap-2"><input name="search" value="@ViewBag.Search" class="form-control"/><button class="btn btn-secondary">بحث</button></form>
-<a asp-action="Create" class="btn btn-primary">طلب جديد</a></div>
-<table class="table table-striped jdms-table"><thead><tr><th>رقم الطلب</th><th>العميل</th><th>التاريخ</th><th>الحالة</th><th>الإجمالي</th><th></th></tr></thead>
-<tbody>@foreach(var o in Model){<tr><td>@o.OrderNumber</td><td>@o.CustomerName</td><td>@o.OrderDate.ToString("yyyy-MM-dd")</td><td>@o.StatusName</td><td>@o.GrandTotal.ToString("N2")</td>
-<td><a asp-action="Details" asp-route-id="@o.Id" class="btn btn-sm btn-info">تفاصيل</a></td></tr>}</tbody></table>
+@using JDMS.Domain.Enums
+@{
+    ViewData["Title"] = "الطلبات";
+    var filter = ViewBag.Filter as OrderFilterDto ?? new OrderFilterDto();
+    var statusOptions = ViewBag.StatusOptions as List<(string Value, string Text)> ?? new();
+
+    string StatusBadgeClass(int status) => status switch
+    {
+        (int)OrderStatus.New => "bg-primary",
+        (int)OrderStatus.Processing => "bg-info text-dark",
+        (int)OrderStatus.ReadyForDelivery => "bg-secondary",
+        (int)OrderStatus.OutForDelivery => "bg-warning text-dark",
+        (int)OrderStatus.Delivered => "bg-success",
+        (int)OrderStatus.Cancelled => "bg-danger",
+        (int)OrderStatus.Returned => "bg-dark",
+        _ => "bg-light text-dark"
+    };
+}
+
+<div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+    <div>
+        <h5 class="mb-0">الطلبات</h5>
+        <small class="text-muted">@Model.Count() طلب — عرض الحالة والتفاصيل وتصدير Excel</small>
+    </div>
+    <div class="d-flex flex-wrap gap-2">
+        <a asp-action="ExportExcel"
+           asp-route-search="@filter.Search"
+           asp-route-status="@filter.Status"
+           asp-route-dateFrom="@(filter.DateFrom?.ToString("yyyy-MM-dd"))"
+           asp-route-dateTo="@(filter.DateTo?.ToString("yyyy-MM-dd"))"
+           class="btn btn-success">
+            تصدير Excel
+        </a>
+        <a asp-action="Create" class="btn btn-primary">+ طلب جديد</a>
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="card-body py-3">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-md-3">
+                <label class="form-label small mb-1">بحث</label>
+                <input name="search" value="@filter.Search" class="form-control form-control-sm"
+                       placeholder="رقم الطلب / العميل / الجوال" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">الحالة</label>
+                <select name="status" class="form-select form-select-sm">
+                    @foreach (var s in statusOptions)
+                    {
+                        var selected = filter.Status?.ToString() == s.Value || (filter.Status == null && s.Value == "");
+                        <option value="@s.Value" selected="@(selected ? "selected" : null)">@s.Text</option>
+                    }
+                </select>
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">من تاريخ</label>
+                <input type="date" name="dateFrom" value="@filter.DateFrom?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-2">
+                <label class="form-label small mb-1">إلى تاريخ</label>
+                <input type="date" name="dateTo" value="@filter.DateTo?.ToString("yyyy-MM-dd")" class="form-control form-control-sm" />
+            </div>
+            <div class="col-md-3 d-flex gap-2">
+                <button type="submit" class="btn btn-secondary btn-sm">تطبيق</button>
+                <a asp-action="Index" class="btn btn-outline-secondary btn-sm">مسح</a>
+            </div>
+        </form>
+    </div>
+</div>
+
+<div class="card">
+    <div class="table-responsive">
+        <table class="table table-striped table-hover jdms-table mb-0 align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>رقم الطلب</th>
+                    <th>العميل</th>
+                    <th>الجوال</th>
+                    <th>التاريخ</th>
+                    <th>الحالة</th>
+                    <th>المنتجات</th>
+                    <th>العنوان</th>
+                    <th class="text-end">الإجمالي</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                @if (!Model.Any())
+                {
+                    <tr>
+                        <td colspan="9" class="text-center text-muted py-4">لا توجد طلبات مطابقة للبحث</td>
+                    </tr>
+                }
+                @foreach (var o in Model)
+                {
+                    <tr>
+                        <td><strong>@o.OrderNumber</strong></td>
+                        <td>@o.CustomerName</td>
+                        <td dir="ltr" class="text-end">@(o.CustomerPhone ?? "—")</td>
+                        <td>
+                            <div>@o.OrderDate.ToLocalTime().ToString("yyyy-MM-dd")</div>
+                            <small class="text-muted">@o.OrderDate.ToLocalTime().ToString("HH:mm")</small>
+                        </td>
+                        <td>
+                            <span class="badge @StatusBadgeClass(o.Status)">@o.StatusName</span>
+                        </td>
+                        <td class="small" style="max-width:220px">
+                            @if (!string.IsNullOrWhiteSpace(o.ProductsSummary))
+                            {
+                                <span title="@o.ProductsSummary">@o.ProductsSummary</span>
+                                <div class="text-muted">@o.ItemCount صنف</div>
+                            }
+                            else
+                            {
+                                <span class="text-muted">—</span>
+                            }
+                        </td>
+                        <td class="small text-muted" style="max-width:180px">@(o.AddressSummary ?? "—")</td>
+                        <td class="text-end fw-semibold">@o.GrandTotal.ToString("N2")</td>
+                        <td class="text-nowrap">
+                            <a asp-action="Details" asp-route-id="@o.Id" class="btn btn-sm btn-outline-primary">تفاصيل</a>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+</div>

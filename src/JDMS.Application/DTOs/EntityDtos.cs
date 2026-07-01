@@ -143,11 +143,29 @@ public class OrderListDto
     public int Id { get; set; }
     public string OrderNumber { get; set; } = string.Empty;
     public string CustomerName { get; set; } = string.Empty;
+    public string? CustomerPhone { get; set; }
     public DateTime OrderDate { get; set; }
     public DateTime? DeliveryDate { get; set; }
     public int Status { get; set; }
     public string StatusName { get; set; } = string.Empty;
+    public string? PaymentMethodName { get; set; }
+    public string? AddressSummary { get; set; }
+    public string? ProductsSummary { get; set; }
+    public int ItemCount { get; set; }
+    public decimal Subtotal { get; set; }
+    public decimal DeliveryFee { get; set; }
+    public decimal Discount { get; set; }
+    public decimal Tax { get; set; }
     public decimal GrandTotal { get; set; }
+    public string? Notes { get; set; }
+}
+
+public class OrderFilterDto
+{
+    public string? Search { get; set; }
+    public int? Status { get; set; }
+    public DateTime? DateFrom { get; set; }
+    public DateTime? DateTo { get; set; }
 }
 
 public class OrderDetailLineDto
@@ -171,6 +189,7 @@ public class OrderDto
     public DateTime OrderDate { get; set; }
     public DateTime? DeliveryDate { get; set; }
     public int Status { get; set; }
+    public string StatusName { get; set; } = string.Empty;
     public string? Notes { get; set; }
     public decimal Subtotal { get; set; }
     public decimal DeliveryFee { get; set; }
